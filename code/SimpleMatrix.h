@@ -1,13 +1,13 @@
 /***************************************************************
-*  Copyright (C) 2013 Quan Wang <wangq10@rpi.edu> 
-*  Signal Analysis and Machine Perception Laboratory 
-*  Department of Electrical, Computer, and Systems Engineering 
+*  Copyright (C) 2013 Quan Wang <wangq10@rpi.edu>
+*  Signal Analysis and Machine Perception Laboratory
+*  Department of Electrical, Computer, and Systems Engineering
 *  Rensselaer Polytechnic Institute, Troy, NY 12180, USA
-* 
-*  Related publication: 
-*  Quan Wang, Kim L. Boyer. 
-*  Feature Learning by Multidimensional Scaling and its Applications in Object Recognition. 
-*  2013 26th SIBGRAPI Conference on Graphics, Patterns and Images (Sibgrapi). IEEE, 2013. 
+*
+*  Related publication:
+*  Quan Wang, Kim L. Boyer.
+*  Feature Learning by Multidimensional Scaling and its Applications in Object Recognition.
+*  2013 26th SIBGRAPI Conference on Graphics, Patterns and Images (Sibgrapi). IEEE, 2013.
 ***************************************************************/
 
 #ifndef SIMPLE_MATRIX_H
@@ -38,24 +38,24 @@ namespace smat
 		Matrix(int rows, int columns, std::string type); // special matrix such as I
 		Matrix(const char * filename); // load matrix from txt file
 		~Matrix(); // destruction
-		
+
 		void set(int r, int c, T value); // row, column, value
 		T get(int r, int c); // row, column
 		int rows(); // number of rows
 		int columns(); // number of columns
-		
+
 		void print(); // print the matrix
 		Matrix * copy(); // copy itself to a new matrix
-		
+
 		void saveTxt(const char * filename); // save matrix to txt file
-		
+
 		// B=M'
 		Matrix * transpose();
 		// B=M(r1:r2,c1:c2)
 		Matrix * sub(int r1, int r2, int c1, int c2); // submatrix
 		// B=|M|
 		Matrix * abs(); // absolute values
-		
+
 		// numbers of matrix
 		T trace(); // trace
 		double fnorm(); // Frobenius norm
@@ -65,18 +65,18 @@ namespace smat
 		double mean(); // mean of elements
 		T sum(); // sum of elements
 		double std(); // standard deviation of elements
-		
-		
+
+
 		// M=M+a
 		void addNumberSelf(T value); // add a number to itself in space
 		// M=M*a
 		void multiplyNumberSelf(T value); // add a number to itself in space
-		
+
 		// M=M+A
 		void addMatrixSelf(Matrix * A); // add a matrix to itself in space
 		// M=M.*A
 		void dotMultiplyMatrixSelf(Matrix * A); // dot multiply a matrix to itself in space
-		
+
 		// B=M+A
 		Matrix * addMatrixNew(Matrix * A); // add a matrix to itself with new matrix
 		// B=M.*A
@@ -102,14 +102,14 @@ namespace smat
 		if(v1<v2) return v1;
 		else return v2;
 	}
-	
+
 	template<class T>
 	T max(T v1, T v2)
 	{
 		if(v1>v2) return v1;
 		else return v2;
 	}
-	
+
 	template<class T>
 	void swap(T &v1, T &v2)
 	{
@@ -117,7 +117,7 @@ namespace smat
 		v1=v2;
 		v2=v3;
 	}
-	
+
 	template<class T>
 	double sign(T v)
 	{
@@ -125,11 +125,11 @@ namespace smat
 		else if(v<0) return -1.0;
 		else return 0.0;
 	}
-	
+
 	/**********************************************
 	* Implementation part
 	**********************************************/
-	
+
 	template<class T>
 	Matrix<T>::Matrix(int rows, int columns) // initialization without assigning values
 	{
@@ -138,17 +138,17 @@ namespace smat
 			printf("Invalid construction arguments: rows=%d, columns=%d\n",rows,columns);
 			exit(1);
 		}
-		
+
 		rows_=rows;
 		columns_=columns;
-		
+
 		v=new T *[rows];
 		for(int i=0;i<rows;i++)
 		{
 			v[i]=new T[columns];
 		}
 	}
-	
+
 	template<class T>
 	Matrix<T>::Matrix(int rows, int columns, T value) // initialization with all same values
 	{
@@ -157,22 +157,22 @@ namespace smat
 			printf("Invalid construction arguments: rows=%d, columns=%d\n",rows,columns);
 			exit(1);
 		}
-		
+
 		rows_=rows;
 		columns_=columns;
-		
+
 		v=new T *[rows];
 		for(int i=0;i<rows;i++)
 		{
 			v[i]=new T[columns];
-			
+
 			for(int j=0;j<columns;j++)
 			{
 				v[i][j]=value;
 			}
 		}
 	}
-	
+
 	template<class T>
 	Matrix<T>::Matrix(int rows, int columns, std::string type) // special matrix such as I
 	{
@@ -183,13 +183,13 @@ namespace smat
 		}
 		rows_=rows;
 		columns_=columns;
-		
+
 		v=new T *[rows];
 		for(int i=0;i<rows;i++)
 		{
 			v[i]=new T[columns];
 		}
-		
+
 		if(type.compare("I")==0)
 		{
 			for(int i=0;i<rows;i++)
@@ -201,7 +201,7 @@ namespace smat
 				}
 			}
 		}
-		
+
 		else if(type.compare("rand")==0) // all elements between 0 and 1
 		{
 			srand (time(NULL));
@@ -214,12 +214,12 @@ namespace smat
 					r1=rand()*rand()+rand()*rand()+rand();
 					if(r1<0) r1=-r1;
 					r2=double(r1%1000001)/1000000;
-				
+
 					v[i][j]=(T)r2;
 				}
 			}
 		}
-		
+
 		else if(type.compare("rand_int")==0)
 		{
 			srand (time(NULL));
@@ -231,7 +231,7 @@ namespace smat
 				}
 			}
 		}
-		
+
 		else if(type.compare("randperm")==0) // random permutation, each column is a randperm vector of size rows*1
 		{
 			srand (time(NULL));
@@ -241,7 +241,7 @@ namespace smat
 				{
 					v[i][j]=i+1;
 				}
-				
+
 				for(int i=0;i<rows;i++)
 				{
 					int k=rand()%rows;
@@ -256,14 +256,14 @@ namespace smat
 				}
 			}
 		}
-		
+
 		else
 		{
 			printf("Undefined matrix type: %s\n",type.c_str());
 			exit(1);
 		}
 	}
-	
+
 	template<class T>
 	Matrix<T>::Matrix(const char * filename)
 	{
@@ -271,7 +271,7 @@ namespace smat
 		// first pass: matrix size
 		int rows=0;
 		int columns=0;
-		
+
 		pFile=fopen(filename,"r");
 		if(pFile==NULL)
 		{
@@ -310,7 +310,7 @@ namespace smat
 		}
 		fclose (pFile);
 		printf("Reading matrix from file \"%s\": %d rows, %d columns\n",filename,rows,columns);
-		
+
 		// second pass: read data
 		rows_=rows;
 		columns_=columns;
@@ -319,7 +319,7 @@ namespace smat
 		{
 			v[i]=new T[columns];
 		}
-		
+
 		pFile=fopen(filename,"r");
 		if(pFile==NULL)
 		{
@@ -340,7 +340,7 @@ namespace smat
 		}
 		fclose (pFile);
 	}
-	
+
 	template<class T>
 	Matrix<T>::~Matrix() // destruction
 	{
@@ -350,7 +350,7 @@ namespace smat
 		}
 		delete[] v;
 	}
-		
+
 	template<class T>
 	void Matrix<T>::set(int r, int c, T value) // row, column, value
 	{
@@ -361,7 +361,7 @@ namespace smat
 		}
 		v[r][c]=value;
 	}
-	
+
 	template<class T>
 	T Matrix<T>::get(int r, int c) // row, column
 	{
@@ -372,19 +372,19 @@ namespace smat
 		}
 		return v[r][c];
 	}
-	
+
 	template<class T>
 	int Matrix<T>::rows() // number of rows
 	{
 		return rows_;
 	}
-	
+
 	template<class T>
 	int Matrix<T>::columns() // number of columns
 	{
 		return columns_;
 	}
-	
+
 	template<class T>
 	void Matrix<T>::print() // print the matrix
 	{
@@ -399,7 +399,7 @@ namespace smat
 		}
 		printf("\n");
 	}
-	
+
 	template<class T>
 	Matrix<T> * Matrix<T>::copy() // copy itself to a new matrix
 	{
@@ -413,7 +413,7 @@ namespace smat
 		}
 		return A;
 	}
-	
+
 	template<class T>
 	void Matrix<T>::saveTxt(const char * filename)
 	{
@@ -435,7 +435,7 @@ namespace smat
 		fclose(pFile);
 		printf("Matrix saved to file \"%s\"\n",filename);
 	}
-	
+
 	template<class T>
 	Matrix<T> * Matrix<T>::transpose()
 	{
@@ -449,7 +449,7 @@ namespace smat
 		}
 		return A;
 	}
-	
+
 	template<class T>
 	Matrix<T> * Matrix<T>::sub(int r1, int r2, int c1, int c2) // submatrix
 	{
@@ -458,7 +458,7 @@ namespace smat
 			printf("Invalid submatrix indices.\n");
 			exit(1);
 		}
-		
+
 		int newRows=r2-r1+1;
 		int newColumns=c2-c1+1;
 		Matrix<T> * A=new Matrix<T>(newRows,newColumns);
@@ -471,7 +471,7 @@ namespace smat
 		}
 		return A;
 	}
-	
+
 	template<class T>
 	Matrix<T> * Matrix<T>::abs() // absolute values
 	{
@@ -485,7 +485,7 @@ namespace smat
 		}
 		return A;
 	}
-	
+
 	template<class T>
 	T Matrix<T>::trace() // trace
 	{
@@ -496,7 +496,7 @@ namespace smat
 		}
 		return x;
 	}
-	
+
 	template<class T>
 	double Matrix<T>::fnorm() // Frobenius norm
 	{
@@ -510,7 +510,7 @@ namespace smat
 		}
 		return sqrt(x);
 	}
-	
+
 	template<class T>
 	double Matrix<T>::pnorm(double p) // p-norm
 	{
@@ -524,7 +524,7 @@ namespace smat
 		}
 		return pow(x,1/p);
 	}
-	
+
 	template<class T>
 	T Matrix<T>::maxEl(int &r, int &c) // max element
 	{
@@ -545,7 +545,7 @@ namespace smat
 		}
 		return x;
 	}
-	
+
 	template<class T>
 	T Matrix<T>::minEl(int &r, int &c) // min element
 	{
@@ -566,7 +566,7 @@ namespace smat
 		}
 		return x;
 	}
-	
+
 	template<class T>
 	double Matrix<T>::mean() // mean of elements
 	{
@@ -580,7 +580,7 @@ namespace smat
 		}
 		return x/rows_/columns_;
 	}
-	
+
 	template<class T>
 	T Matrix<T>::sum() // sum of elements
 	{
@@ -594,7 +594,7 @@ namespace smat
 		}
 		return x;
 	}
-	
+
 	template<class T>
 	double Matrix<T>::std() // standard deviation of elements
 	{
@@ -607,10 +607,10 @@ namespace smat
 				s+= (v[i][j]-m)*(v[i][j]-m);
 			}
 		}
-		s=s/rows_/columns;
+		s=s/rows_/columns_;
 		return sqrt(s);
 	}
-	
+
 	template<class T>
 	void Matrix<T>::addNumberSelf(T value) // add a number to itself in space
 	{
@@ -622,7 +622,7 @@ namespace smat
 			}
 		}
 	}
-	
+
 	template<class T>
 	void Matrix<T>::multiplyNumberSelf(T value) // add a number to itself in space
 	{
@@ -634,7 +634,7 @@ namespace smat
 			}
 		}
 	}
-	
+
 	template<class T>
 	void Matrix<T>::addMatrixSelf(Matrix * A) // add a matrix to itself in space
 	{
@@ -643,7 +643,7 @@ namespace smat
 			printf("Unmatched matrix sizes in matrix summation.\n");
 			exit(1);
 		}
-		
+
 		for(int i=0;i<rows_;i++)
 		{
 			for(int j=0;j<columns_;j++)
@@ -652,7 +652,7 @@ namespace smat
 			}
 		}
 	}
-	
+
 	template<class T>
 	void Matrix<T>::dotMultiplyMatrixSelf(Matrix * A) // dot multiply a matrix to itself in space
 	{
@@ -661,7 +661,7 @@ namespace smat
 			printf("Unmatched matrix sizes in matrix dot multiplication.\n");
 			exit(1);
 		}
-		
+
 		for(int i=0;i<rows_;i++)
 		{
 			for(int j=0;j<columns_;j++)
@@ -670,7 +670,7 @@ namespace smat
 			}
 		}
 	}
-	
+
 	template<class T>
 	Matrix<T> * Matrix<T>::addMatrixNew(Matrix * A) // add a matrix to itself with new matrix
 	{
@@ -679,7 +679,7 @@ namespace smat
 			printf("Unmatched matrix sizes in matrix summation.\n");
 			exit(1);
 		}
-		
+
 		Matrix<T> * B=new Matrix<T>(rows_,columns_);
 		for(int i=0;i<rows_;i++)
 		{
@@ -690,7 +690,7 @@ namespace smat
 		}
 		return B;
 	}
-	
+
 	template<class T>
 	Matrix<T> * Matrix<T>::dotMultiplyMatrixNew(Matrix * A) // dot multiply a matrix to itself with new matrix
 	{
@@ -699,7 +699,7 @@ namespace smat
 			printf("Unmatched matrix sizes in matrix dot multiplication.\n");
 			exit(1);
 		}
-		
+
 		Matrix<T> * B=new Matrix<T>(rows_,columns_);
 		for(int i=0;i<rows_;i++)
 		{
@@ -710,7 +710,7 @@ namespace smat
 		}
 		return B;
 	}
-	
+
 	template<class T>
 	Matrix<T> * Matrix<T>::multiplyMatrixNew(Matrix * A) // multiply a matrix to itself with new matrix
 	{
@@ -719,7 +719,7 @@ namespace smat
 			printf("Unmatched matrix sizes in matrix multiplication.\n");
 			exit(1);
 		}
-		
+
 		Matrix<T> * B=new Matrix<T>(rows_,A->columns());
 		T temp;
 		for(int i=0;i<rows_;i++)
@@ -736,12 +736,12 @@ namespace smat
 		}
 		return B;
 	}
-	
+
 
 	/**********************************************
 	* Algorithm part
-	**********************************************/	
-	
+	**********************************************/
+
 	// Calculate the pairwise interpoint Euclidean distances
 	// X is data matrix, D is distance matrix
 	void EuclideanDistanceMatrix(Matrix<double> * X, Matrix<double> * D)
@@ -758,9 +758,9 @@ namespace smat
 			printf("Invalid distance matrix dimension.\n");
 			exit(1);
 		}
-		
+
 		for(i=0;i<D->rows();i++) D->set(i,i,0.0);
-		
+
 		for(i=0;i<D->rows()-1;i++)
 		{
 			for(j=i+1;j<D->columns();j++)
@@ -773,7 +773,7 @@ namespace smat
 				D->set(i,j,sqrt(temp));
 			}
 		}
-		
+
 		for(i=1;i<D->rows();i++)
 		{
 			for(j=0;j<i;j++)
@@ -782,7 +782,7 @@ namespace smat
 			}
 		}
 	}
-	
+
 	// Copy all elements of X to Y
 	void ElementCopy(Matrix<double> * X, Matrix<double> * Y)
 	{
@@ -804,7 +804,7 @@ namespace smat
 			}
 		}
 	}
-	
+
 	// Multidimensional scaling (MDS)
 	// This function re-implements Laurens van der Maaten's MDS in his Matlab Toolbox for Dimensionality Reduction
 	// The Matlab MDS can be downloaded at http://crcv.ucf.edu/source/dimension
@@ -825,9 +825,9 @@ namespace smat
 			printf("Invalid number of iterations for MDS.\n");
 			exit(1);
 		}
-		
+
 		Matrix<double> * X=NULL;
-		
+
 		// with initialization
 		if(X0!=NULL)
 		{
@@ -846,31 +846,31 @@ namespace smat
 			X->addNumberSelf(-0.5); // move to the center
 			X->multiplyNumberSelf(0.1*D_mean/(1.0/3.0*sqrt((double)dim))); // before this step, mean distance is 1/3*sqrt(d)
 		}
-		
+
 		double lr=0.05; // learning rate
 		double r=2; // metric
 		int n=D->rows(); // number of vectors
-		
-		
+
+
 		Matrix<double> * dh=new Matrix<double>(n,n,0.0);
 		Matrix<double> * pmat=new Matrix<double>(n,dim);
 		Matrix<double> * dhdum=new Matrix<double>(n,1);
 		Matrix<double> * dhmat=new Matrix<double>(n-1,dim,0);
-		
+
 		Matrix<int> * RP=new Matrix<int>(n,iter,"randperm"); // the matrix for random permutation numbers
 		int i,j;
 		double temp;
 		int m;
-		
-		printf("MDS iteration:"); 
+
+		printf("MDS iteration:");
 		for(int it=0;it<iter;it++) // iterations
 		{
 			if(it%10==0) printf("\n");
-			printf("%3d  ",it+1); 
+			printf("%3d  ",it+1);
 			for(int rp=0;rp<n;rp++) // work on each vector in a randomly permuted order
 			{
 				m=RP->get(rp,it)-1;
-				
+
 				for(i=0;i<n;i++)
 				{
 					for(j=0;j<dim;j++)
@@ -878,7 +878,7 @@ namespace smat
 						pmat->set(i,j,  X->get(m,j)-X->get(i,j)  );
 					}
 				}
-				
+
 				for(i=0;i<n;i++)
 				{
 					temp=0;
@@ -892,7 +892,7 @@ namespace smat
 				for(i=0;i<n;i++)
 				{
 					if(i==m) continue;
-					
+
 					dh->set(m,i,  dhdum->get(i,0)  );
 					dh->set(i,m,  dhdum->get(i,0)  );
 				}
@@ -907,7 +907,7 @@ namespace smat
 						dhmat->set(i,j,  temp  );
 					}
 				}
-				
+
 				for(i=0;i<n-1;i++)
 				{
 					int ii=i;
@@ -916,24 +916,24 @@ namespace smat
 					{
 						temp=X->get(ii,j);
 						temp+= dhmat->get(i,j) * pow(fabs( pmat->get(ii,j) ),r-1) * sign<double>(pmat->get(ii,j));
-						
+
 						X->set(ii,j,temp);
 					}
 				}
 			}
 		}
-		
+
 		printf("\n");
-		
+
 		delete dh;
 		delete pmat;
 		delete dhdum;
 		delete dhmat;
 		delete RP;
-		
+
 		return X;
 	}
-	
+
 	// Multidimensional scaling (MDS) with SMACOF
 	// This code re-implements Michael Bronstein's SMACOF in his Matlab Toolbox for Surface Comparison and Analysis
 	// The Matlab SMACOF can be downloaded at http://tosca.cs.technion.ac.il/
@@ -954,9 +954,9 @@ namespace smat
 			printf("Invalid number of iterations for MDS.\n");
 			exit(1);
 		}
-		
+
 		Matrix<double> * X=NULL;
-		
+
 		// with initialization
 		if(X0!=NULL)
 		{
@@ -975,21 +975,21 @@ namespace smat
 			X->addNumberSelf(-0.5); // move to the center
 			X->multiplyNumberSelf(0.1*D_mean/(1.0/3.0*sqrt((double)dim))); // before this step, mean distance is 1/3*sqrt(d)
 		}
-		
-		
+
+
 		Matrix<double> * Z=X->copy();
 		Matrix<double> * D_=new Matrix<double>(D->rows(),D->columns());
 		Matrix<double> * B=new Matrix<double>(D->rows(),D->columns());
 		int i,j,k;
 		double temp;
-		
+
 		EuclideanDistanceMatrix(X,D_);
 
-		printf("MDS iteration:"); 
+		printf("MDS iteration:");
 		for(int it=0;it<iter;it++) // iterations
 		{
 			if(it%10==0) printf("\n");
-			printf("%3d  ",it+1); 
+			printf("%3d  ",it+1);
 
 			// B = calc_B(D_,D);
 			for(i=0;i<D->rows();i++)
@@ -1030,20 +1030,20 @@ namespace smat
     				X->set(i,j,temp/(double)D->rows());
     			}
     		}
-    		
+
     		// D_ = calc_D (X);
     		EuclideanDistanceMatrix(X,D_);
-	
+
     		// Z = X;
 			ElementCopy(X,Z);
 		}
-    	
+
 		printf("\n");
-		
+
 		delete Z;
 		delete D_;
 		delete B;
-		
+
 		return X;
 	}
 }
