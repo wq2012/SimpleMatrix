@@ -1,5 +1,8 @@
 # SimpleMatrix
 
+[![Build Status](https://travis-ci.org/wq2012/SimpleMatrix.svg?branch=master)](https://travis-ci.org/wq2012/SimpleMatrix)
+
+
 ## About
 SimpleMatrix is an extremely lightweight matrix library, containing a single
 header file.
