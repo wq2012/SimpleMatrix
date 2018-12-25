@@ -1,6 +1,4 @@
-# SimpleMatrix
-
-[![Build Status](https://travis-ci.org/wq2012/SimpleMatrix.svg?branch=master)](https://travis-ci.org/wq2012/SimpleMatrix)
+# SimpleMatrix [![Build Status](https://travis-ci.org/wq2012/SimpleMatrix.svg?branch=master)](https://travis-ci.org/wq2012/SimpleMatrix)
 
 
 ## About
