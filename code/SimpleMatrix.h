@@ -532,6 +532,10 @@ double Matrix<T>::pnorm(double p) // p-norm
       x += pow(fabs((double)v[i][j]), p);
     }
   }
+  if (p == 0.0)
+  {
+    return x;
+  }
   return pow(x, 1 / p);
 }
 
