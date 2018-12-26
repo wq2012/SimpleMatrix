@@ -23,9 +23,14 @@ This library is developed as part of the MDS Feature Learning project.
 To give credit to this library, you may cite:
 
 ```
-Quan Wang, Kim L. Boyer.
-Feature Learning by Multidimensional Scaling and its Applications in Object Recognition.
-2013 26th SIBGRAPI Conference on Graphics, Patterns and Images (Sibgrapi). IEEE, 2013.
+@inproceedings{wang2013feature,
+  title={Feature learning by multidimensional scaling and its applications in object recognition},
+  author={Wang, Quan and Boyer, Kim L},
+  booktitle={Graphics, Patterns and Images (SIBGRAPI), 2013 26th SIBGRAPI-Conference on},
+  pages={8--15},
+  year={2013},
+  organization={IEEE}
+}
 ```
 
 ![swiss](resources/swiss.png)
