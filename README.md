@@ -1,4 +1,4 @@
-# SimpleMatrix [![Build Status](https://travis-ci.org/wq2012/SimpleMatrix.svg?branch=master)](https://travis-ci.org/wq2012/SimpleMatrix)
+# SimpleMatrix [![C/C++ CI](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml)
 
 
 ## About
