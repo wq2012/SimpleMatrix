@@ -107,6 +107,15 @@ public:
   Matrix *concatenateRight(Matrix *A);
   Matrix *concatenateBottom(Matrix *A);
 
+  // Linear Algebra
+  void lu(Matrix *&L, Matrix *&U, Matrix *&P);   // LU Decomposition
+  void qr(Matrix *&Q, Matrix *&R);               // QR Decomposition
+  void eigen(Matrix *&V, Matrix *&D);            // Eigenvalue Decomposition
+  void svd(Matrix *&U, Matrix *&S, Matrix *&Vt); // Singular Value Decomposition
+  T determinant();                               // Determinant
+  int rank();                                    // Matrix Rank
+  Matrix *inverse();                             // Matrix Inverse
+
   // Operator overloading
   Matrix<T> operator+(const Matrix<T> &other);
   Matrix<T> operator-(const Matrix<T> &other);
@@ -1052,6 +1061,570 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T> &other)
     }
   }
   return res;
+}
+
+template <class T>
+void Matrix<T>::lu(Matrix *&L, Matrix *&U, Matrix *&P) // LU Decomposition
+{
+  if (rows_ != columns_)
+  {
+    printf("LU decomposition requires square matrix.\n");
+    exit(1);
+  }
+  int n = rows_;
+  L = new Matrix<T>(n, n, 0.0);
+  U = new Matrix<T>(n, n, 0.0);
+  P = new Matrix<T>(n, n, "I");
+
+  Matrix<T> *A = this->copy(); // Work on a copy
+
+  for (int i = 0; i < n; i++)
+  {
+    // Pivot
+    T maxEl = std::abs((double)A->get(i, i));
+    int maxRow = i;
+    for (int k = i + 1; k < n; k++)
+    {
+      if (std::abs((double)A->get(k, i)) > maxEl)
+      {
+        maxEl = std::abs((double)A->get(k, i));
+        maxRow = k;
+      }
+    }
+
+    // Swap rows in A and P
+    for (int k = 0; k < n; k++)
+    {
+      T tmp = A->get(i, k);
+      A->set(i, k, A->get(maxRow, k));
+      A->set(maxRow, k, tmp);
+
+      tmp = P->get(i, k);
+      P->set(i, k, P->get(maxRow, k));
+      P->set(maxRow, k, tmp);
+      
+      // We also need to swap rows in L (the parts already computed)?
+      // Actually standard algorithm: P A = L U. L is lower triangular.
+      // If we swap rows of A, we are essentially permuting equations.
+      // Standard pivot strategy involves keeping track of permutations.
+      // Doolittle algorithm extracts L and U directly.
+    }
+    
+    // However, simplest standard implementation with P A = L U usually does:
+    // 1. Pivot A. Record swap in P.
+    // 2. But we must also swap rows in L for k < i to keep L lower triangular consistent!
+    for (int k=0; k<i; k++) {
+        T tmp = L->get(i, k);
+        L->set(i, k, L->get(maxRow, k));
+        L->set(maxRow, k, tmp);
+    }
+    
+    L->set(i, i, 1.0);
+
+    for (int k = i + 1; k < n; k++)
+    {
+      double c = -A->get(k, i) / A->get(i, i);
+      L->set(k, i, -c); // Multiplier
+      for (int j = i; j < n; j++)
+      {
+        if (i == j)
+          A->set(k, j, 0);
+        else
+          A->set(k, j, A->get(k, j) + c * A->get(i, j));
+      }
+    }
+  }
+
+  // U is the remaining A
+  for (int i = 0; i < n; i++)
+  {
+    for (int j = 0; j < n; j++)
+    {
+      if (j >= i)
+        U->set(i, j, A->get(i, j));
+    }
+  }
+
+  delete A;
+}
+
+template <class T>
+T Matrix<T>::determinant() // Determinant
+{
+  if (rows_ != columns_)
+  {
+    printf("Determinant requires square matrix.\n");
+    exit(1);
+  }
+  
+  // Custom simple Gaussian elimination for det to avoid full LU overhead if desired,
+  // but reusing LU code is better for maintenance unless perf is critical.
+  // Actually, I'll implement a tailored Gaussian elimination for Det to track sign flips easily.
+  
+  Matrix<T> *A = this->copy();
+  T det = 1.0;
+  int n = rows_;
+  
+  for (int i = 0; i < n; i++)
+  {
+    int pivot = i;
+    for (int j = i + 1; j < n; j++) {
+      if (std::abs((double)A->get(j, i)) > std::abs((double)A->get(pivot, i)))
+        pivot = j; 
+    }
+    
+    if (std::abs((double)A->get(pivot, i)) < EPSILON) {
+      delete A;
+      return 0.0;
+    }
+    
+    if (pivot != i) {
+       // Swap rows
+       for(int k=0; k<n; k++) {
+         T tmp = A->get(i, k);
+         A->set(i, k, A->get(pivot, k));
+         A->set(pivot, k, tmp);
+       }
+       det = -det;
+    }
+    
+    det *= A->get(i, i);
+    
+    for (int j = i + 1; j < n; j++) {
+      double factor = A->get(j, i) / A->get(i, i);
+      for (int k = i + 1; k < n; k++) {
+         A->set(j, k, A->get(j, k) - factor * A->get(i, k));
+      }
+    }
+  }
+  
+  delete A;
+  return det;
+}
+
+template <class T>
+Matrix<T>* Matrix<T>::inverse() // Matrix Inverse
+{
+  if (rows_ != columns_)
+  {
+    printf("Inverse requires square matrix.\n");
+    exit(1);
+  }
+  
+  int n = rows_;
+  Matrix<T> *Inv = new Matrix<T>(n, n);
+  Matrix<T> *A = this->copy();
+  // Augment with Identity? Or just solve Ax = I column by column.
+  // Gaussian elimination with Identity.
+  
+  // Initialize Inv as Identity
+  for(int i=0; i<n; i++)
+    for(int j=0; j<n; j++)
+      Inv->set(i, j, (i==j) ? 1.0 : 0.0);
+      
+  for (int i = 0; i < n; i++) {
+      int pivot = i;
+      for(int j=i+1; j<n; j++)
+        if(std::abs((double)A->get(j, i)) > std::abs((double)A->get(pivot, i))) pivot = j;
+        
+      if(std::abs((double)A->get(pivot, i)) < EPSILON) {
+          printf("Matrix is singular, cannot find inverse.\n");
+          exit(1);
+      }
+      
+      // Swap rows in A and Inv
+      if(pivot != i) {
+          for(int k=0; k<n; k++) {
+              T tmp = A->get(i, k); A->set(i, k, A->get(pivot, k)); A->set(pivot, k, tmp);
+              tmp = Inv->get(i, k); Inv->set(i, k, Inv->get(pivot, k)); Inv->set(pivot, k, tmp);
+          }
+      }
+      
+      // Scale row i to make diagonal 1
+      double div = A->get(i, i);
+      for(int k=0; k<n; k++) {
+          A->set(i, k, A->get(i, k) / div);
+          Inv->set(i, k, Inv->get(i, k) / div);
+      }
+      
+      // Eliminate other rows
+      for(int j=0; j<n; j++) {
+          if(i != j) {
+              double mul = A->get(j, i);
+              for(int k=0; k<n; k++) {
+                  A->set(j, k, A->get(j, k) - mul * A->get(i, k));
+                  Inv->set(j, k, Inv->get(j, k) - mul * Inv->get(i, k));
+              }
+          }
+      }
+  }
+  
+  delete A;
+  return Inv;
+}
+
+template <class T>
+void Matrix<T>::qr(Matrix *&Q, Matrix *&R) // QR Decomposition
+{
+    // Householder transformations
+    // A = Q R
+    // R is upper triangular, Q is orthogonal
+    if (rows_ < columns_) {
+        printf("QR decomposition requires rows >= columns.\n");
+        exit(1);
+    }
+    
+    int m = rows_;
+    int n = columns_;
+    
+    Q = new Matrix<T>(m, m, "I");
+    R = this->copy();
+    
+    for (int k = 0; k < std::min(m-1, n); k++) {
+        // Construct vector x = R[k:m, k]
+        // We want to zero out elements below diagonal in column k
+        
+        // Compute norm of x
+        double norm_x = 0;
+        for(int i=k; i<m; i++) {
+            norm_x += R->get(i, k) * R->get(i, k);
+        }
+        norm_x = std::sqrt(norm_x);
+        
+        // Check if column is already zero (or close)
+        if (norm_x < EPSILON) continue;
+        
+        // v = x + sign(x[0]) * ||x|| * e1
+        // Actually, better numerical stability: v[0] = x[0] + sign(x[0])*norm_x
+        // We only store the non-zero part of v, which is size (m-k)
+        
+        double u1 = R->get(k, k);
+        double sign = (u1 >= 0) ? 1.0 : -1.0;
+        double u1_new = u1 + sign * norm_x;
+        
+        // v = [u1_new, x_1, x_2, ...]
+        // normalize v? 
+        // H = I - 2 v v^T / (v^T v)
+        
+        double norm_v_sq = u1_new * u1_new; // first element squared
+        for(int i=k+1; i<m; i++) {
+            norm_v_sq += R->get(i, k) * R->get(i, k);
+        }
+        
+        if (norm_v_sq < EPSILON) continue;
+        
+        double tau = 2.0 / norm_v_sq;
+        
+        // Apply H to R: R = (I - tau v v^T) R = R - tau v (v^T R)
+        // Only affects rows k to m
+        
+        // Compute w = v^T R (row vector)
+        // v is column vector of size m-k.
+        // R subblock is (m-k) x (n-k)
+        
+        for (int j = k; j < n; j++) {
+            double dot = u1_new * R->get(k, j);
+            for(int i=k+1; i<m; i++) {
+                dot += R->get(i, k) * R->get(i, j); 
+                // Wait, constructing v explicitly means v[i-k] = R[i, k] for i>k
+            }
+            
+            // R[k:m, j] -= tau * dot * v
+            double val = R->get(k, j) - tau * dot * u1_new;
+            R->set(k, j, val);
+            for(int i=k+1; i<m; i++) {
+                // v[i-k] corresponds to old R[i, k]
+                // But we are modifying R in place!
+                // We need to use "v" which was derived from OLD column k.
+                // Ah, column k of R for index i>k IS v[i-k]!
+                // So for j=k?
+                // For j=k: dot...
+                // Wait, if we modify column k, we lose v.
+                // We must store v or update column k last.
+                // Or better, just store v separately.
+                
+            }
+        }
+    }
+    // Let's rewrite cleanly with explicit v vector.
+    delete Q; delete R; // cleanup retry
+    
+    Q = new Matrix<T>(m, m, "I");
+    R = this->copy();
+    
+    double* v = new double[m];
+    
+    for (int k = 0; k < std::min(m-1, n); k++) {
+        double norm_x = 0;
+        for(int i=k; i<m; i++) norm_x += R->get(i, k) * R->get(i, k);
+        norm_x = std::sqrt(norm_x);
+        
+        if(norm_x < EPSILON) continue;
+        
+        double u1 = R->get(k, k);
+        double sign = (u1 >= 0) ? 1.0 : -1.0;
+        
+        // Construct v
+        v[k] = u1 + sign * norm_x;
+        for(int i=k+1; i<m; i++) v[i] = R->get(i, k);
+        
+        double norm_v_sq = 0;
+        for(int i=k; i<m; i++) norm_v_sq += v[i]*v[i];
+        
+        if (norm_v_sq < EPSILON) continue;
+        double tau = 2.0 / norm_v_sq;
+        
+        // Update R: R = H R
+        // w = v^T R
+        for (int j = k; j < n; j++) {
+            double dot = 0;
+            for(int i=k; i<m; i++) dot += v[i] * R->get(i, j);
+             
+            for(int i=k; i<m; i++) {
+                R->set(i, j, R->get(i, j) - tau * dot * v[i]);
+            }
+        }
+        
+        // Update Q: Q = Q H (accumulate from right because H_1 H_2 ... )
+        // Q_new = Q_old * (I - tau v v^T) = Q_old - tau (Q_old v) v^T
+        for (int i=0; i<m; i++) { // For each row of Q
+             double dot = 0;
+             for(int j=k; j<m; j++) dot += Q->get(i, j) * v[j];
+             
+             for(int j=k; j<m; j++) {
+                 Q->set(i, j, Q->get(i, j) - tau * dot * v[j]);
+             }
+        }
+    }
+    delete[] v;
+}
+
+template <class T>
+void Matrix<T>::eigen(Matrix *&V, Matrix *&D) // Eigenvalue Decomposition
+{
+    // Jacobi eigenvalue algorithm to find eigenvalues and eigenvectors of a real symmetric matrix
+    // A V = V D
+    if (rows_ != columns_)
+    {
+      printf("Eigen decomposition requires square matrix.\n");
+      exit(1);
+    }
+    
+    int n = rows_;
+    D = this->copy(); // Will become diagonal
+    V = new Matrix<T>(n, n, "I"); // Accumulate rotations
+    
+    int maxRotations = 5 * n * n;
+    
+    for (int i = 0; i < maxRotations; i++) {
+        // Find largest off-diagonal element
+        double maxEl = 0;
+        int p = -1, q = -1;
+        
+        for (int r = 0; r < n-1; r++) {
+            for (int c = r+1; c < n; c++) {
+                if (std::abs((double)D->get(r,c)) > maxEl) {
+                    maxEl = std::abs((double)D->get(r,c));
+                    p = r; q = c;
+                }
+            }
+        }
+        
+        if (maxEl < EPSILON) break; // Converged
+        
+        double App = D->get(p, p);
+        double Aqq = D->get(q, q);
+        double Apq = D->get(p, q);
+        
+        double theta = 0.5 * std::atan2(2 * Apq, Aqq - App);
+        double c = std::cos(theta);
+        double s = std::sin(theta);
+        
+        // Update D (A' = J^T A J)
+        // D[p,p] = c^2 App - 2sc Apq + s^2 Aqq
+        // D[q,q] = s^2 App + 2sc Apq + c^2 Aqq
+        // D[p,q] = D[q,p] = 0
+        // Other elements:
+        // D[p,k] = c D[p,k] - s D[q,k]
+        // D[q,k] = s D[p,k] + c D[q,k]
+        
+        D->set(p, p, c*c*App - 2*s*c*Apq + s*s*Aqq);
+        D->set(q, q, s*s*App + 2*s*c*Apq + c*c*Aqq);
+        D->set(p, q, 0.0);
+        D->set(q, p, 0.0);
+        
+        for (int k=0; k<n; k++) {
+            if (k!=p && k!=q) {
+                double Dpk = D->get(p, k);
+                double Dqk = D->get(q, k);
+                D->set(p, k, c*Dpk - s*Dqk);
+                D->set(k, p, D->get(p, k)); // symmetry
+                
+                D->set(q, k, s*Dpk + c*Dqk);
+                D->set(k, q, D->get(q, k));
+            }
+        }
+        
+        // Update V (V' = V J)
+        // V[k,p] = c V[k,p] - s V[k,q]
+        // V[k,q] = s V[k,p] + c V[k,q]
+        for (int k=0; k<n; k++) {
+            double Vkp = V->get(k, p);
+            double Vkq = V->get(k, q);
+            V->set(k, p, c*Vkp - s*Vkq);
+            V->set(k, q, s*Vkp + c*Vkq);
+        }
+    }
+}
+
+
+
+template <class T>
+void Matrix<T>::svd(Matrix *&U, Matrix *&S, Matrix *&Vt) // Singular Value Decomposition
+{
+    // One-sided Jacobi SVD
+    // A = U S Vt
+    
+    // Handle m < n by recursion on A^T
+    if (rows_ < columns_) {
+        Matrix<T> *At = this->transpose();
+        Matrix<T> *U_t, *S_t, *Vt_t;
+        At->svd(U_t, S_t, Vt_t);
+        
+        // A = (U S Vt)^T = V S^T U^T = V S U^T
+        // So U_new = V_old, S_new = S_old^T = S_old, Vt_new = U_old^T
+        
+        U = Vt_t->transpose(); // Wait, Vt_t is V^T. Transpose gives V.
+        S = S_t->transpose(); // S is diagonal usually, but dimensions flip? 
+        // Our S will be diagonal square or match dimensions?
+        // Ideally S is diagonal. Let's make S diagonal (min(m,n) size or m x n dimensions?).
+        // Standard: U is m x m, S is m x n, Vt is n x n. Or thin SVD.
+        // Let's implement Thin SVD or standard full SVD?
+        // One-Sided Jacobi naturally gives Thin SVD (U is m x n, S is n x n, V is n x n) if m >= n.
+        
+        // Let's stick to simple convention: U (m x min), S (diagonal), Vt (min x n)?
+        // No, standard full SVD: U (m x m), S (m x n), Vt (n x n).
+        // For simplicity allow Thin SVD logic where U corresponds to non-zero singular values columns.
+        
+        // Actually, let's look at the recursion again.
+        // At (n x m) -> U' (n x n), S' (n x m), Vt' (m x m).
+        // A = (U' S' Vt')^T = Vt'^T S'^T U'^T
+        // So U = Vt'^T, S = S'^T, Vt = U'^T
+        
+        U = Vt_t->transpose();
+        S = S_t->transpose();
+        Vt = U_t->transpose(); // U' is n x n, so Vt is n x n.
+        
+        delete At; delete U_t; delete S_t; delete Vt_t;
+        return;
+    }
+
+    int m = rows_;
+    int n = columns_;
+    
+    // Copy A into U initially (we will orthogonalize columns of U)
+    U = this->copy();
+    // V starts as Identity
+    Matrix<T> *V = new Matrix<T>(n, n, "I");
+    
+    // One-sided Jacobi
+    int maxRotations = 10 * n * n; // Heuristic
+    
+    for (int iter = 0; iter < maxRotations; iter++) {
+        int count = 0;
+        for (int i = 0; i < n-1; i++) {
+            for (int j = i+1; j < n; j++) {
+                // Compute [a b; b c] of column i and j
+                // a = col_i . col_i
+                // b = col_i . col_j
+                // c = col_j . col_j
+                
+                double a=0, b=0, c=0;
+                for(int k=0; k<m; k++) {
+                    double p = U->get(k, i);
+                    double q = U->get(k, j);
+                    a += p*p;
+                    b += p*q;
+                    c += q*q;
+                }
+                
+                if (std::abs(b) < EPSILON) continue; // Orthogonal enough
+                count++;
+                
+                // Jacobi rotation
+                double zeta = (c - a) / (2 * b);
+                double t = (zeta > 0 ? 1 : -1) / (std::abs(zeta) + std::sqrt(1 + zeta*zeta));
+                double cs = 1 / std::sqrt(1 + t*t);
+                double sn = cs * t;
+                
+                // Update U columns i and j
+                for(int k=0; k<m; k++) {
+                    double p = U->get(k, i);
+                    double q = U->get(k, j);
+                    U->set(k, i, cs*p - sn*q);
+                    U->set(k, j, sn*p + cs*q);
+                }
+                
+                // Update V columns i and j
+                // V_new = V * J(i, j, theta). 
+                // Col i of V = c * col i - s * col j
+                for(int k=0; k<n; k++) {
+                    double p = V->get(k, i);
+                    double q = V->get(k, j);
+                    V->set(k, i, cs*p - sn*q);
+                    V->set(k, j, sn*p + cs*q);
+                }
+            }
+        }
+        if (count == 0) break;
+    }
+    
+    // Norms of columns of U are singular values
+    S = new Matrix<T>(n, n, 0.0); // Diagonal
+    // U currently contains A V. 
+    // Norms are singular values. 
+    
+    for(int i=0; i<n; i++) {
+        double norm = 0;
+        for(int k=0; k<m; k++) norm += U->get(k, i) * U->get(k, i);
+        norm = std::sqrt(norm);
+        S->set(i, i, norm);
+        
+        // Normalize column i of U
+        if (norm > EPSILON) {
+            for(int k=0; k<m; k++) U->set(k, i, U->get(k, i) / norm);
+        }
+    }
+    
+    // U is currently m x n (Compact SVD)
+    // S is n x n
+    // Vt is V^T
+    Vt = V->transpose();
+    delete V;
+}
+
+template <class T>
+int Matrix<T>::rank() // Matrix Rank
+{
+    // Compute rank using SVD
+    // Rank is the number of non-zero singular values (or > epsilon)
+    Matrix<T> *U, *S, *Vt;
+    this->svd(U, S, Vt);
+    
+    int r = 0;
+    int k = std::min(rows_, columns_);
+    for(int i=0; i<k; i++) {
+        // Singular values are on diagonal of S
+        // Use a relative tolerance based on max singular value
+        // But for simplicity, simple epsilon check or max_sv * epsilon * max(m,n)
+        double sigma = std::abs((double)S->get(i, i));
+        if (sigma > 1e-10) { // A bit loose tolerance, or standard machine epsilon logic
+             r++;
+        }
+    }
+    
+    delete U; delete S; delete Vt;
+    return r;
 }
 
 /**********************************************

@@ -222,6 +222,173 @@ void test_mds()
   delete D_rec;
 }
 
+void test_linear_algebra()
+{
+  // Test Determinant
+  smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
+  // 1 2 3
+  // 4 5 6  (singular det=0) -> make it non-singular: 6->7
+  // 7 8 7   
+  // det = 1(35-48) - 2(28-42) + 3(32-35) = 1(-13) - 2(-14) + 3(-3) = -13 + 28 - 9 = 6
+  A->set(0,0,1); A->set(0,1,2); A->set(0,2,3);
+  A->set(1,0,4); A->set(1,1,5); A->set(1,2,6); // 4 5 6
+  A->set(2,0,7); A->set(2,1,8); A->set(2,2,7); // 7 8 7
+  
+  assertFloatEqual(A->determinant(), 6.0);
+  
+  // Test Inverse
+  smat::Matrix<double> *Inv = A->inverse();
+  smat::Matrix<double> I = (*A) * (*Inv);
+  // Check if I is identity
+  for(int i=0; i<3; i++)
+      for(int j=0; j<3; j++)
+          assertFloatEqual(I.get(i, j), (i==j)?1.0:0.0);
+  delete Inv;
+
+  // Test LU
+  smat::Matrix<double> *L, *U, *P;
+  A->lu(L, U, P);
+  
+  smat::Matrix<double> PA = (*P) * (*A);
+  smat::Matrix<double> LU = (*L) * (*U);
+  
+  for(int i=0; i<3; i++)
+      for(int j=0; j<3; j++)
+          assertFloatEqual(PA.get(i, j), LU.get(i, j));
+          
+  delete L; delete U; delete P; delete A;
+}
+
+void test_qr()
+{
+  smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
+  // 12 -51 4
+  // 6 167 -68
+  // -4 24 -41
+  A->set(0,0,12); A->set(0,1,-51); A->set(0,2,4);
+  A->set(1,0,6); A->set(1,1,167); A->set(1,2,-68);
+  A->set(2,0,-4); A->set(2,1,24); A->set(2,2,-41);
+  
+  smat::Matrix<double> *Q, *R;
+  A->qr(Q, R);
+  
+  // Verify A = QR
+  smat::Matrix<double> QR = (*Q) * (*R);
+  for(int i=0; i<3; i++)
+     for(int j=0; j<3; j++)
+         assertFloatEqual(A->get(i, j), QR.get(i, j));
+         
+  // Verify Q is orthogonal (Q^T Q = I)
+  smat::Matrix<double> *Qt = Q->transpose();
+  smat::Matrix<double> QtQ = (*Qt) * (*Q);
+  for(int i=0; i<3; i++)
+     for(int j=0; j<3; j++)
+         assertFloatEqual(QtQ.get(i, j), (i==j)?1.0:0.0);
+         
+  // Verify R is upper triangular
+  assertFloatEqual(R->get(1, 0), 0.0);
+  assertFloatEqual(R->get(2, 0), 0.0);
+  assertFloatEqual(R->get(2, 1), 0.0);
+  
+  delete Q; delete R; delete Qt; delete A;
+}
+
+void test_eigen()
+{
+  smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
+  // Symmetric Matrix
+  // 2 -1 0
+  // -1 2 -1
+  // 0 -1 2
+  A->set(0,0,2); A->set(0,1,-1); A->set(0,2,0);
+  A->set(1,0,-1); A->set(1,1,2); A->set(1,2,-1);
+  A->set(2,0,0); A->set(2,1,-1); A->set(2,2,2);
+  
+  smat::Matrix<double> *V, *D;
+  A->eigen(V, D);
+  
+  // Verify A V = V D
+  smat::Matrix<double> AV = (*A) * (*V);
+  smat::Matrix<double> VD = (*V) * (*D);
+  
+  for(int i=0; i<3; i++)
+     for(int j=0; j<3; j++)
+         assertFloatEqual(AV.get(i, j), VD.get(i, j));
+         
+  // Verify VT V = I (Orthogonal)
+  smat::Matrix<double> *Vt = V->transpose();
+  smat::Matrix<double> VtV = (*Vt) * (*V);
+  for(int i=0; i<3; i++)
+     for(int j=0; j<3; j++)
+         assertFloatEqual(VtV.get(i, j), (i==j)?1.0:0.0);
+         
+  // Check eigenvalues (known: 2-sqrt(2), 2, 2+sqrt(2) => 0.5857, 2, 3.4142)
+  // But order is arbitrary. Just print or checking diagonal is enough.
+  
+  delete V; delete D; delete Vt; delete A;
+}
+
+void test_svd()
+{
+  smat::Matrix<double> *A = new smat::Matrix<double>(3, 2);
+  // 1 2
+  // 3 4
+  // 5 6
+  A->set(0,0,1); A->set(0,1,2);
+  A->set(1,0,3); A->set(1,1,4);
+  A->set(2,0,5); A->set(2,1,6);
+  
+  smat::Matrix<double> *U, *S, *Vt;
+  A->svd(U, S, Vt);
+  
+  // Verify A = U S Vt
+  smat::Matrix<double> US = (*U) * (*S);
+  smat::Matrix<double> USVt = US * (*Vt);
+  
+  for(int i=0; i<3; i++)
+     for(int j=0; j<2; j++)
+         assertFloatEqual(A->get(i, j), USVt.get(i, j));
+         
+  // Verify U is orthogonal-ish (columns are orthonormal)
+  // U is m x n (Compact SVD) -> U^T U = I
+  smat::Matrix<double> *Ut = U->transpose();
+  smat::Matrix<double> UtU = (*Ut) * (*U);
+  for(int i=0; i<2; i++)
+     for(int j=0; j<2; j++)
+         assertFloatEqual(UtU.get(i, j), (i==j)?1.0:0.0);
+         
+  // Verify V is orthogonal
+  // Vt is V^T. Vt * Vt^T = I
+  smat::Matrix<double> *V = Vt->transpose();
+  smat::Matrix<double> VVt = (*V) * (*Vt); // Or Vt * V
+  for(int i=0; i<2; i++)
+     for(int j=0; j<2; j++)
+         assertFloatEqual(VVt.get(i, j), (i==j)?1.0:0.0);
+         
+  delete U; delete S; delete Vt; delete Ut; delete V; delete A;
+}
+
+void test_rank()
+{
+  smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
+  // Full rank
+  // 1 0 0 
+  // 0 1 0
+  // 0 0 1
+  A->set(0,0,1); A->set(1,1,1); A->set(2,2,1);
+  if (A->rank() != 3) { printf("Rank check failed (expected 3, got %d)\n", A->rank()); exit(1); }
+  
+  // Rank deficient
+  // 1 1 1
+  // 1 1 1
+  // 1 1 1
+  // Rank should be 1
+  for(int i=0; i<3; i++) for(int j=0; j<3; j++) A->set(i, j, 1.0);
+  if (A->rank() != 1) { printf("Rank check failed (expected 1, got %d)\n", A->rank()); exit(1); }
+  
+  delete A;
+}
+
 int main(int argc, const char *argv[])
 {
   test_basics();
@@ -232,6 +399,11 @@ int main(int argc, const char *argv[])
   test_concatenation();
   test_operators();
   test_mds();
+  test_linear_algebra();
+  test_qr();
+  test_eigen();
+  test_svd();
+  test_rank();
   std::cout << "All tests passed!" << std::endl;
   return 0;
 }

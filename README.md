@@ -8,10 +8,11 @@ SimpleMatrix is an extremely lightweight C++ matrix library, consisting of a sin
 *   **Template Class:** Supports varying precision (e.g., `float`, `double`).
 *   **Core Operations:** Implements essential matrix operations like addition, subtraction, multiplication, transposition, and submatrix extraction.
 *   **Memory Safe:** Handles memory allocation and deallocation automatically (RAII compliant copy/assignment).
+*   **Advanced Algorithms:** Includes LU, QR, Eigenvalue (Symmetric), SVD decompositions, Determinant, and Inverse.
 *   **MDS Algorithm:** Includes Multidimensional Scaling (MDS) algorithms (SMACOF and UCF versions).
 
 **Limitations:**
-*   Does **NOT** currently implement complex linear algebra operations like inverse, determinant, eigenvectors, or decompositions (LU, QR, SVD).
+*   Eigenvalue decomposition is currently implemented for symmetric matrices only.
 
 ## Integration
 To use SimpleMatrix, simply include the header file in your C++ source code:
@@ -94,6 +95,13 @@ All methods ending with `Self` modify the instance in-place. Methods ending with
 *   `double pnorm(double p)`: p-norm.
 
 ### Algorithms
+*   `void lu(Matrix*& L, Matrix*& U, Matrix*& P)`: LU Decomposition ($PA = LU$).
+*   `void qr(Matrix*& Q, Matrix*& R)`: QR Decomposition ($A = QR$).
+*   `void eigen(Matrix*& V, Matrix*& D)`: Eigenvalue Decomposition for symmetric matrices ($A V = V D$).
+*   `void svd(Matrix*& U, Matrix*& S, Matrix*& Vt)`: Singular Value Decomposition ($A = U S V^T$).
+*   `T determinant()`: Compute determinant.
+*   `int rank()`: Compute rank (number of singular values > threshold).
+*   `Matrix* inverse()`: Compute inverse matrix.
 *   `MDS_SMACOF(...)`: Multidimensional Scaling using SMACOF.
 *   `MDS_UCF(...)`: Multidimensional Scaling using UCF method.
 
