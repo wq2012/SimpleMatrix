@@ -37,6 +37,8 @@ public:
   Matrix(int rows, int columns, T value);          // initialization with all same values
   Matrix(int rows, int columns, std::string type); // special matrix such as I
   Matrix(const char *filename);                    // load matrix from txt file
+  Matrix(const Matrix &other);                     // copy constructor
+  Matrix &operator=(const Matrix &other);          // assignment operator
   ~Matrix();                                       // destruction
 
   void set(int r, int c, T value); // row, column, value
@@ -68,20 +70,47 @@ public:
 
   // M=M+a
   void addNumberSelf(T value); // add a number to itself in space
+  // M=M-a
+  void subtractNumberSelf(T value); // subtract a number from itself in space
   // M=M*a
-  void multiplyNumberSelf(T value); // add a number to itself in space
+  void multiplyNumberSelf(T value); // multiply a number to itself in space
+  // M=M/a
+  void divideNumberSelf(T value); // divide itself by a number in space
+
+  // Element-wise functions
+  Matrix *exp();
+  Matrix *log();
+  Matrix *sqrt();
+  Matrix *power(double p);
 
   // M=M+A
   void addMatrixSelf(Matrix *A); // add a matrix to itself in space
+  // M=M-A
+  void subtractMatrixSelf(Matrix *A); // subtract a matrix from itself in space
   // M=M.*A
   void dotMultiplyMatrixSelf(Matrix *A); // dot multiply a matrix to itself in space
+  // M=M./A
+  void dotDivideMatrixSelf(Matrix *A); // dot divide a matrix to itself in space
 
   // B=M+A
   Matrix *addMatrixNew(Matrix *A); // add a matrix to itself with new matrix
+  // B=M-A
+  Matrix *subtractMatrixNew(Matrix *A); // subtract a matrix from itself with new matrix
   // B=M.*A
   Matrix *dotMultiplyMatrixNew(Matrix *A); // dot multiply a matrix to itself with new matrix
+  // B=M./A
+  Matrix *dotDivideMatrixNew(Matrix *A); // dot divide a matrix to itself with new matrix
   // B=M*A
   Matrix *multiplyMatrixNew(Matrix *A); // multiply a matrix to itself with new matrix
+
+  // Concatenation
+  Matrix *concatenateRight(Matrix *A);
+  Matrix *concatenateBottom(Matrix *A);
+
+  // Operator overloading
+  Matrix<T> operator+(const Matrix<T> &other);
+  Matrix<T> operator-(const Matrix<T> &other);
+  Matrix<T> operator*(const Matrix<T> &other);
 
 private:
   int rows_;
@@ -352,6 +381,48 @@ Matrix<T>::Matrix(const char *filename)
 }
 
 template <class T>
+Matrix<T>::Matrix(const Matrix &other) // copy constructor
+{
+  rows_ = other.rows_;
+  columns_ = other.columns_;
+  v = new T *[rows_];
+  for (int i = 0; i < rows_; i++)
+  {
+    v[i] = new T[columns_];
+    for (int j = 0; j < columns_; j++)
+    {
+      v[i][j] = other.v[i][j];
+    }
+  }
+}
+
+template <class T>
+Matrix<T> &Matrix<T>::operator=(const Matrix &other) // assignment operator
+{
+  if (this != &other)
+  {
+    for (int i = 0; i < rows_; i++)
+    {
+      delete[] v[i];
+    }
+    delete[] v;
+
+    rows_ = other.rows_;
+    columns_ = other.columns_;
+    v = new T *[rows_];
+    for (int i = 0; i < rows_; i++)
+    {
+      v[i] = new T[columns_];
+      for (int j = 0; j < columns_; j++)
+      {
+        v[i][j] = other.v[i][j];
+      }
+    }
+  }
+  return *this;
+}
+
+template <class T>
 Matrix<T>::~Matrix() // destruction
 {
   for (int i = 0; i < rows_; i++)
@@ -518,7 +589,7 @@ double Matrix<T>::fnorm() // Frobenius norm
       x += (v[i][j] * v[i][j]);
     }
   }
-  return sqrt(x);
+  return std::sqrt(x);
 }
 
 template <class T>
@@ -638,6 +709,12 @@ void Matrix<T>::addNumberSelf(T value) // add a number to itself in space
 }
 
 template <class T>
+void Matrix<T>::subtractNumberSelf(T value)
+{
+  addNumberSelf(-value);
+}
+
+template <class T>
 void Matrix<T>::multiplyNumberSelf(T value) // add a number to itself in space
 {
   for (int i = 0; i < rows_; i++)
@@ -647,6 +724,68 @@ void Matrix<T>::multiplyNumberSelf(T value) // add a number to itself in space
       v[i][j] *= value;
     }
   }
+}
+
+template <class T>
+void Matrix<T>::divideNumberSelf(T value)
+{
+  multiplyNumberSelf(1.0 / value);
+}
+
+template <class T>
+Matrix<T> *Matrix<T>::exp()
+{
+  Matrix<T> *A = new Matrix<T>(rows_, columns_);
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      A->set(i, j, std::exp((double)v[i][j]));
+    }
+  }
+  return A;
+}
+
+template <class T>
+Matrix<T> *Matrix<T>::log()
+{
+  Matrix<T> *A = new Matrix<T>(rows_, columns_);
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      A->set(i, j, std::log((double)v[i][j]));
+    }
+  }
+  return A;
+}
+
+template <class T>
+Matrix<T> *Matrix<T>::sqrt()
+{
+  Matrix<T> *A = new Matrix<T>(rows_, columns_);
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      A->set(i, j, std::sqrt((double)v[i][j]));
+    }
+  }
+  return A;
+}
+
+template <class T>
+Matrix<T> *Matrix<T>::power(double p)
+{
+  Matrix<T> *A = new Matrix<T>(rows_, columns_);
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      A->set(i, j, std::pow((double)v[i][j], p));
+    }
+  }
+  return A;
 }
 
 template <class T>
@@ -668,6 +807,24 @@ void Matrix<T>::addMatrixSelf(Matrix *A) // add a matrix to itself in space
 }
 
 template <class T>
+void Matrix<T>::subtractMatrixSelf(Matrix *A)
+{
+  if (rows_ != A->rows() || columns_ != A->columns())
+  {
+    printf("Unmatched matrix sizes in matrix subtraction.\n");
+    exit(1);
+  }
+
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      v[i][j] -= A->get(i, j);
+    }
+  }
+}
+
+template <class T>
 void Matrix<T>::dotMultiplyMatrixSelf(Matrix *A) // dot multiply a matrix to itself in space
 {
   if (rows_ != A->rows() || columns_ != A->columns())
@@ -681,6 +838,24 @@ void Matrix<T>::dotMultiplyMatrixSelf(Matrix *A) // dot multiply a matrix to its
     for (int j = 0; j < columns_; j++)
     {
       v[i][j] *= A->get(i, j);
+    }
+  }
+}
+
+template <class T>
+void Matrix<T>::dotDivideMatrixSelf(Matrix *A)
+{
+  if (rows_ != A->rows() || columns_ != A->columns())
+  {
+    printf("Unmatched matrix sizes in matrix dot division.\n");
+    exit(1);
+  }
+
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      v[i][j] /= A->get(i, j);
     }
   }
 }
@@ -706,6 +881,26 @@ Matrix<T> *Matrix<T>::addMatrixNew(Matrix *A) // add a matrix to itself with new
 }
 
 template <class T>
+Matrix<T> *Matrix<T>::subtractMatrixNew(Matrix *A)
+{
+  if (rows_ != A->rows() || columns_ != A->columns())
+  {
+    printf("Unmatched matrix sizes in matrix subtraction.\n");
+    exit(1);
+  }
+
+  Matrix<T> *B = new Matrix<T>(rows_, columns_);
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      B->set(i, j, v[i][j] - A->get(i, j));
+    }
+  }
+  return B;
+}
+
+template <class T>
 Matrix<T> *Matrix<T>::dotMultiplyMatrixNew(Matrix *A) // dot multiply a matrix to itself with new matrix
 {
   if (rows_ != A->rows() || columns_ != A->columns())
@@ -720,6 +915,26 @@ Matrix<T> *Matrix<T>::dotMultiplyMatrixNew(Matrix *A) // dot multiply a matrix t
     for (int j = 0; j < columns_; j++)
     {
       B->set(i, j, v[i][j] * A->get(i, j));
+    }
+  }
+  return B;
+}
+
+template <class T>
+Matrix<T> *Matrix<T>::dotDivideMatrixNew(Matrix *A)
+{
+  if (rows_ != A->rows() || columns_ != A->columns())
+  {
+    printf("Unmatched matrix sizes in matrix dot division.\n");
+    exit(1);
+  }
+
+  Matrix<T> *B = new Matrix<T>(rows_, columns_);
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < columns_; j++)
+    {
+      B->set(i, j, v[i][j] / A->get(i, j));
     }
   }
   return B;
@@ -749,6 +964,94 @@ Matrix<T> *Matrix<T>::multiplyMatrixNew(Matrix *A) // multiply a matrix to itsel
     }
   }
   return B;
+}
+
+template <class T>
+Matrix<T> *Matrix<T>::concatenateRight(Matrix *A)
+{
+  if (rows_ != A->rows())
+  {
+    printf("Unmatched matrix rows in concatenation.\n");
+    exit(1);
+  }
+  Matrix<T> *B = new Matrix<T>(rows_, columns_ + A->columns());
+  for (int i = 0; i < rows_; i++)
+  {
+    for(int j=0; j<columns_; j++) B->set(i, j, v[i][j]);
+    for(int j=0; j<A->columns(); j++) B->set(i, j + columns_, A->get(i, j));
+  }
+  return B;
+}
+
+template <class T>
+Matrix<T> *Matrix<T>::concatenateBottom(Matrix *A)
+{
+  if (columns_ != A->columns())
+  {
+    printf("Unmatched matrix columns in concatenation.\n");
+    exit(1);
+  }
+  Matrix<T> *B = new Matrix<T>(rows_ + A->rows(), columns_);
+  for(int j=0; j<columns_; j++)
+  {
+    for(int i=0; i<rows_; i++) B->set(i, j, v[i][j]);
+    for(int i=0; i<A->rows(); i++) B->set(i + rows_, j, A->get(i, j));
+  }
+  return B;
+}
+
+template <class T>
+Matrix<T> Matrix<T>::operator+(const Matrix<T> &other)
+{
+  if (rows_ != other.rows_ || columns_ != other.columns_)
+  {
+    printf("Unmatched matrix sizes in operator+.\n");
+    exit(1);
+  }
+  Matrix<T> res(rows_, columns_);
+  for(int i=0; i<rows_; i++)
+    for(int j=0; j<columns_; j++)
+      res.set(i, j, v[i][j] + other.v[i][j]);
+  return res;
+}
+
+template <class T>
+Matrix<T> Matrix<T>::operator-(const Matrix<T> &other)
+{
+  if (rows_ != other.rows_ || columns_ != other.columns_)
+  {
+    printf("Unmatched matrix sizes in operator-.\n");
+    exit(1);
+  }
+  Matrix<T> res(rows_, columns_);
+  for(int i=0; i<rows_; i++)
+    for(int j=0; j<columns_; j++)
+      res.set(i, j, v[i][j] - other.v[i][j]);
+  return res;
+}
+
+template <class T>
+Matrix<T> Matrix<T>::operator*(const Matrix<T> &other)
+{
+  if (columns_ != other.rows_)
+  {
+    printf("Unmatched matrix sizes in operator*.\n");
+    exit(1);
+  }
+  Matrix<T> res(rows_, other.columns_);
+  for (int i = 0; i < rows_; i++)
+  {
+    for (int j = 0; j < other.columns_; j++)
+    {
+      T temp = 0;
+      for (int k = 0; k < columns_; k++)
+      {
+        temp += (v[i][k] * other.v[k][j]);
+      }
+      res.set(i, j, temp);
+    }
+  }
+  return res;
 }
 
 /**********************************************

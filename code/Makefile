@@ -1,6 +1,12 @@
-.PHONY: all clean
+.PHONY: all clean test run
 
-all: demo_Matrix.exe SimpleMatrixTest.exe
+all: clean demo_Matrix.exe SimpleMatrixTest.exe
+
+run: demo_Matrix.exe
+	./demo_Matrix.exe
+
+test: SimpleMatrixTest.exe
+	./SimpleMatrixTest.exe
 
 demo_Matrix.exe: demo_Matrix.cpp SimpleMatrix.h
 	g++ -Wall demo_Matrix.cpp -o demo_Matrix.exe

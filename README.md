@@ -1,26 +1,138 @@
 # SimpleMatrix [![C/C++ CI](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml)
 
-
 ## About
-SimpleMatrix is an extremely lightweight matrix library, containing a single
-header file.
+SimpleMatrix is an extremely lightweight C++ matrix library, consisting of a single header file `SimpleMatrix.h`. It is designed for simplicity and ease of integration.
 
-* It uses the namespace `smat`.
-* The `Matrix` class is a template class.
-* It implements basic matrix representations and operations, such as
-multiplication, transpose, and submatrix.
-* It does **NOT** implement complicated operations such as inverse, determinant,
-eigenvector, or decompositions.
-* It implements the Multidimensional Scaling (MDS) algorithm.
+**Key Features:**
+*   **Single-Header:** Easy to integrate; just drop `SimpleMatrix.h` into your project.
+*   **Template Class:** Supports varying precision (e.g., `float`, `double`).
+*   **Core Operations:** Implements essential matrix operations like addition, subtraction, multiplication, transposition, and submatrix extraction.
+*   **Memory Safe:** Handles memory allocation and deallocation automatically (RAII compliant copy/assignment).
+*   **MDS Algorithm:** Includes Multidimensional Scaling (MDS) algorithms (SMACOF and UCF versions).
 
-This library is developed as part of the MDS Feature Learning project.
+**Limitations:**
+*   Does **NOT** currently implement complex linear algebra operations like inverse, determinant, eigenvectors, or decompositions (LU, QR, SVD).
 
-* The wiki site of the SimpleMatrix C++ library:
-  https://sites.google.com/site/simpmatrix/
-* The wiki site of the MDS Feature Learning project:
-  https://sites.google.com/site/mdsfeature/
+## Integration
+To use SimpleMatrix, simply include the header file in your C++ source code:
 
-To give credit to this library, you may cite:
+```cpp
+#include "SimpleMatrix.h"
+```
+
+The library uses the `smat` namespace.
+
+## Quick Start
+
+```cpp
+#include <iostream>
+#include "SimpleMatrix.h"
+
+int main() {
+    // Initialize a 3x3 matrix with value 1.0
+    smat::Matrix<double> A(3, 3, 1.0);
+    
+    // Set an element
+    A.set(0, 0, 5.0);
+    
+    // Create an Identity matrix
+    smat::Matrix<double> I(3, 3, "I");
+    
+    // Matrix Addition
+    smat::Matrix<double> C = A + I;
+    
+    // Print result
+    C.print();
+    
+    return 0;
+}
+```
+
+## API Reference
+
+### Constructors
+*   `Matrix(int rows, int cols)`: Create uninitialized matrix.
+*   `Matrix(int rows, int cols, T value)`: Create matrix filled with `value`.
+*   `Matrix(int rows, int cols, std::string type)`: Create special matrix.
+    *   `"I"`: Identity matrix.
+    *   `"rand"`: Random values between 0 and 1.
+    *   `"rand_int"`: Random integers.
+    *   `"randperm"`: Random permutation.
+*   `Matrix(const char* filename)`: Load matrix from a text file.
+
+### Accessors
+*   `void set(int r, int c, T value)`: Set element at (r, c).
+*   `T get(int r, int c)`: Get element at (r, c).
+*   `int rows()`: Get number of rows.
+*   `int columns()`: Get number of columns.
+*   `void print()`: Print matrix to variables formatted output.
+*   `void saveTxt(const char* filename)`: Save matrix to text file.
+*   `Matrix* copy()`: Return a pointer to a deep copy of the matrix.
+
+### Basic Operations
+*   `Matrix* transpose()`: Return a new transposed matrix.
+*   `Matrix* sub(int r1, int r2, int c1, int c2)`: Return submatrix from (r1,c1) to (r2,c2).
+*   `Matrix* concatenateRight(Matrix* A)`: Concatenate `A` to the right.
+*   `Matrix* concatenateBottom(Matrix* A)`: Concatenate `A` to the bottom.
+
+### Arithmetic & Math
+All methods ending with `Self` modify the instance in-place. Methods ending with `New` or operator overloads return a new `Matrix` object.
+
+*   **Operators:** `+`, `-`, `*` (Matrix Multiplication).
+*   **Scalar:** `addNumberSelf`, `subtractNumberSelf`, `multiplyNumberSelf`, `divideNumberSelf`.
+*   **Element-wise Matrix:** `addMatrixSelf/New`, `subtractMatrixSelf/New`, `dotMultiplyMatrixSelf/New`, `dotDivideMatrixSelf/New`.
+*   **Math Functions:** `exp()`, `log()`, `sqrt()`, `power(p)`.
+
+### Statistics
+*   `T sum()`: Sum of all elements.
+*   `double mean()`: Mean of all elements.
+*   `double std()`: Standard deviation.
+*   `T minEl(int& r, int& c)`: Minimum element (stores indices in r, c).
+*   `T maxEl(int& r, int& c)`: Maximum element (stores indices in r, c).
+*   `T trace()`: Trace of the matrix.
+*   `double fnorm()`: Frobenius norm.
+*   `double pnorm(double p)`: p-norm.
+
+### Algorithms
+*   `MDS_SMACOF(...)`: Multidimensional Scaling using SMACOF.
+*   `MDS_UCF(...)`: Multidimensional Scaling using UCF method.
+
+## Building and Testing
+
+A `Makefile` is provided for easy compilation and testing.
+
+### Prerequisites
+*   `g++` (GNU C++ Compiler)
+*   `make`
+
+### Build Commands
+*   **Build Everything**:
+    ```bash
+    make
+    ```
+    This builds `demo_Matrix.exe` and `SimpleMatrixTest.exe`. Note: This command always cleans previous builds first.
+
+*   **Run Demo**:
+    ```bash
+    make run
+    ```
+    Builds and runs the `demo_Matrix.exe`, demonstrating basic usage and MDS on the Swiss Roll dataset.
+
+*   **Run Tests**:
+    ```bash
+    make test
+    ```
+    Builds and runs the unit tests in `SimpleMatrixTest.cpp`.
+
+*   **Clean Artifacts**:
+    ```bash
+    make clean
+    ```
+    Removes all executables.
+
+## Citation
+
+If you find this library useful for your research, please cite:
 
 ```
 @inproceedings{wang2013feature,
@@ -32,30 +144,6 @@ To give credit to this library, you may cite:
   organization={IEEE}
 }
 ```
-
-![swiss](resources/swiss.png)
-
-## Files
-
-### SimpleMatrix.h
-* This is an extremely lightweight matrix library, containing a single header file.
-* It uses the namespace `smat`.
-* The `Matrix` class is a template class.
-* It implements basic matrix representations and operations, such as multiplication, transpose, and submatrix.
-* It does **NOT** implement complicated operations such as inverse, determinant, eigenvector, or decompositions.
-* It implements the Multidimensional Scaling (MDS) algorithm with two versions: the UCF version and the SMACOF version.
-
-### demo_Matrix.cpp
-* This is a demo showing how to use this library, including reading matrix from txt file, matrix multiplication, and MDS.
-* A Makefile is provided to compile this demo with g++.
-
-### visualize_MDS_results.m
-* This is a MATLAB script for showing the MDS results of running `demo_Matrix.exe`.
-* The `demo_Matrix.exe` performs MDS on the matrix in s`wissD.txt`, which is the geodesic distance matrix of a Swiss roll surface.
-* The `swissX0.txt` contains the initialization matrix for the Swiss roll flattening problem.
-* The MDS results are saved in `swissX1.txt`, `swissX2.txt`, `swissX3.txt` and `swissX4.txt`.
-* `swissroll.mat` stores data for the visualization.
-
 
 ## Copyright
 
