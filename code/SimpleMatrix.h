@@ -463,7 +463,7 @@ Matrix<T> *Matrix<T>::transpose()
 template <class T>
 Matrix<T> *Matrix<T>::sub(int r1, int r2, int c1, int c2) // submatrix
 {
-  if (r1 < 0 || r1 >= rows_ || r2 < 0 || r2 >= rows_ || r2 < r1 || c1 < 0 || c1 >= columns_ || c2 < 0 || c2 > columns_ || c2 < c1)
+  if (r1 < 0 || r1 >= rows_ || r2 < 0 || r2 >= rows_ || r2 < r1 || c1 < 0 || c1 >= columns_ || c2 < 0 || c2 >= columns_ || c2 < c1)
   {
     printf("Invalid submatrix indices.\n");
     exit(1);
