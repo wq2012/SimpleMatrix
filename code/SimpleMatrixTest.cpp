@@ -1,6 +1,8 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <vector>
+#include <stdexcept>
 #include "SimpleMatrix.h"
 
 const float eps = 0.001;
@@ -25,6 +27,79 @@ void assertFloatEqual(float x, float y, float threshold = eps)
     assert(false);
   }
 }
+
+void assertTrue(bool condition, const char* msg = "Assertion failed")
+{
+  if (!condition)
+  {
+    std::cerr << msg << std::endl;
+    assert(false);
+  }
+}
+
+template <class T>
+bool isLowerTriangular(const smat::Matrix<T>& M, bool unitDiagonal = false)
+{
+  for (int i = 0; i < M.rows(); i++)
+  {
+    for (int j = i + 1; j < M.columns(); j++)
+    {
+      if (std::abs((double)M.get(i, j)) > eps) return false;
+    }
+    if (unitDiagonal && std::abs((double)M.get(i, i) - 1.0) > eps) return false;
+  }
+  return true;
+}
+
+template <class T>
+bool isUpperTriangular(const smat::Matrix<T>& M)
+{
+  for (int i = 0; i < M.rows(); i++)
+  {
+    for (int j = 0; j < i; j++)
+    {
+      if (std::abs((double)M.get(i, j)) > eps) return false;
+    }
+  }
+  return true;
+}
+
+template <class T>
+bool isDiagonal(const smat::Matrix<T>& M)
+{
+  for (int i = 0; i < M.rows(); i++)
+  {
+    for (int j = 0; j < M.columns(); j++)
+    {
+      if (i != j && std::abs((double)M.get(i, j)) > eps) return false;
+    }
+  }
+  return true;
+}
+
+template <class T>
+bool isIdentity(const smat::Matrix<T>& M)
+{
+  if (M.rows() != M.columns()) return false;
+  for (int i = 0; i < M.rows(); i++)
+  {
+    for (int j = 0; j < M.columns(); j++)
+    {
+      double expected = (i == j) ? 1.0 : 0.0;
+      if (std::abs((double)M.get(i, j) - expected) > eps) return false;
+    }
+  }
+  return true;
+}
+
+template <class T>
+bool isOrthogonal(const smat::Matrix<T>& M)
+{
+  smat::Matrix<T> Mt = M.transpose();
+  smat::Matrix<T> MtM = Mt * M;
+  return isIdentity(MtM);
+}
+
 
 void printTestHeader(const char* name)
 {
@@ -263,6 +338,9 @@ void test_linear_algebra()
   for(int i=0; i<3; i++)
       for(int j=0; j<3; j++)
           assertFloatEqual(PA.get(i, j), LU.get(i, j));
+
+  assertTrue(isLowerTriangular(L, true), "L must be unit lower triangular");
+  assertTrue(isUpperTriangular(U), "U must be upper triangular");
           
   printTestPass("Linear Algebra");
 }
@@ -271,9 +349,6 @@ void test_qr()
 {
   printTestHeader("QR Decomposition");
   smat::Matrix<double> A(3, 3);
-  // 12 -51 4
-  // 6 167 -68
-  // -4 24 -41
   A.set(0,0,12); A.set(0,1,-51); A.set(0,2,4);
   A.set(1,0,6); A.set(1,1,167); A.set(1,2,-68);
   A.set(2,0,-4); A.set(2,1,24); A.set(2,2,-41);
@@ -287,17 +362,11 @@ void test_qr()
      for(int j=0; j<3; j++)
          assertFloatEqual(A.get(i, j), QR.get(i, j));
          
-  // Verify Q is orthogonal (Q^T Q = I)
-  smat::Matrix<double> Qt = Q.transpose();
-  smat::Matrix<double> QtQ = Qt * Q;
-  for(int i=0; i<3; i++)
-     for(int j=0; j<3; j++)
-         assertFloatEqual(QtQ.get(i, j), (i==j)?1.0:0.0);
+  // Verify Q is orthogonal
+  assertTrue(isOrthogonal(Q), "Q must be orthogonal");
          
   // Verify R is upper triangular
-  assertFloatEqual(R.get(1, 0), 0.0);
-  assertFloatEqual(R.get(2, 0), 0.0);
-  assertFloatEqual(R.get(2, 1), 0.0);
+  assertTrue(isUpperTriangular(R), "R must be upper triangular");
   
   printTestPass("QR Decomposition");
 }
@@ -325,12 +394,24 @@ void test_eigen()
      for(int j=0; j<3; j++)
          assertFloatEqual(AV.get(i, j), VD.get(i, j));
          
-  // Verify VT V = I (Orthogonal)
-  smat::Matrix<double> Vt = V.transpose();
-  smat::Matrix<double> VtV = Vt * V;
-  for(int i=0; i<3; i++)
-     for(int j=0; j<3; j++)
-         assertFloatEqual(VtV.get(i, j), (i==j)?1.0:0.0);
+  // Verify V is orthogonal (eigenvectors are orthonormal)
+  assertTrue(isOrthogonal(V), "V must be orthogonal");
+
+  // Verify D is diagonal (matrix of eigenvalues)
+  assertTrue(isDiagonal(D), "D must be diagonal");
+
+  // Verify eigenvalues directly using the new eigenvalues() method
+  smat::Matrix<double> eigVals = A.eigenvalues();
+  assertIntEq(eigVals.rows(), 3);
+  assertIntEq(eigVals.columns(), 1);
+
+  // Expected eigenvalues of [2 -1 0; -1 2 -1; 0 -1 2] are 2-sqrt(2), 2, 2+sqrt(2)
+  // which are approx 0.5858, 2.0, 3.4142
+  std::vector<double> vals = {eigVals.get(0, 0), eigVals.get(1, 0), eigVals.get(2, 0)};
+  std::sort(vals.begin(), vals.end());
+  assertFloatEqual(vals[0], 2.0 - std::sqrt(2.0));
+  assertFloatEqual(vals[1], 2.0);
+  assertFloatEqual(vals[2], 2.0 + std::sqrt(2.0));
          
   printTestPass("Eigen Decomposition");
 }
@@ -357,21 +438,15 @@ void test_svd()
      for(int j=0; j<2; j++)
          assertFloatEqual(A.get(i, j), USVt.get(i, j));
          
-  // Verify U is orthogonal-ish (columns are orthonormal)
-  // U is m x n (Compact SVD) -> U^T U = I
-  smat::Matrix<double> Ut = U.transpose();
-  smat::Matrix<double> UtU = Ut * U;
-  for(int i=0; i<2; i++)
-     for(int j=0; j<2; j++)
-         assertFloatEqual(UtU.get(i, j), (i==j)?1.0:0.0);
-         
-  // Verify V is orthogonal
-  // Vt is V^T. Vt * Vt^T = I
-  smat::Matrix<double> V = Vt.transpose();
-  smat::Matrix<double> VVt = V * Vt; // Or Vt * V
-  for(int i=0; i<2; i++)
-     for(int j=0; j<2; j++)
-         assertFloatEqual(VVt.get(i, j), (i==j)?1.0:0.0);
+  // Verify U and V are orthogonal
+  assertTrue(isOrthogonal(U), "U must be orthogonal-ish (columns are orthonormal)");
+  assertTrue(isOrthogonal(Vt.transpose()), "V must be orthogonal");
+
+  // Verify S is diagonal and entries non-negative
+  assertTrue(isDiagonal(S), "S must be diagonal");
+  for(int i=0; i<2; i++) {
+      assertTrue(S.get(i, i) >= -eps, "Singular values must be non-negative");
+  }
          
   printTestPass("SVD");
 }
@@ -452,6 +527,79 @@ void test_solve()
   printTestPass("solve()");
 }
 
+void test_exceptions()
+{
+  printTestHeader("Exceptions");
+  
+  smat::Matrix<double> A(2, 2, 1.0);
+  
+  // Test out_of_range
+  try {
+    A.get(2, 0);
+    assertTrue(false, "Should have thrown out_of_range for get(2, 0)");
+  } catch (const std::out_of_range& e) {
+    // Success
+  }
+
+  // Test dimension mismatch in addition
+  smat::Matrix<double> B(3, 3, 1.0);
+  try {
+    smat::Matrix<double> C = A + B;
+    assertTrue(false, "Should have thrown invalid_argument for A + B");
+  } catch (const std::invalid_argument& e) {
+    // Success
+  }
+
+  // Test dot product mismatch
+  smat::Matrix<double> D(2, 3);
+  try {
+    smat::Matrix<double> E = A * D; // 2x2 * 2x3 is OK
+    smat::Matrix<double> F = D * A; // 2x3 * 2x2 is NOT OK
+    assertTrue(false, "Should have thrown invalid_argument for D * A");
+  } catch (const std::invalid_argument& e) {
+    // Success
+  }
+
+  // Test LU of non-square matrix
+  smat::Matrix<double> G(2, 3);
+  smat::Matrix<double> L, U, P;
+  try {
+    G.lu(L, U, P);
+    assertTrue(false, "Should have thrown invalid_argument for non-square LU");
+  } catch (const std::invalid_argument& e) {
+    // Success
+  }
+
+  printTestPass("Exceptions");
+}
+
+void test_edge_cases()
+{
+  printTestHeader("Edge Cases");
+  
+  // 1x1 Matrix
+  smat::Matrix<double> A(1, 1, 5.0);
+  assertFloatEqual(A.determinant(), 5.0);
+  smat::Matrix<double> Inv = A.inverse();
+  assertFloatEqual(Inv.get(0, 0), 0.2);
+  
+  // Singular Matrix
+  smat::Matrix<double> S = {{1.0, 1.0}, {1.0, 1.0}};
+  assertFloatEqual(S.determinant(), 0.0);
+  try {
+      S.inverse();
+      assertTrue(false, "Should have thrown runtime_error for singular inverse");
+  } catch (const std::runtime_error& e) {
+      // Success
+  }
+
+  // Identity matrix property det(I) = 1
+  smat::Matrix<double> I(5, 5, "I");
+  assertFloatEqual(I.determinant(), 1.0);
+  
+  printTestPass("Edge Cases");
+}
+
 int main(int argc, const char *argv[])
 {
   test_basics();
@@ -469,6 +617,8 @@ int main(int argc, const char *argv[])
   test_rank();
   test_cpp11_features();
   test_solve();
+  test_exceptions();
+  test_edge_cases();
   std::cout << "All tests passed!" << std::endl;
   return 0;
 }

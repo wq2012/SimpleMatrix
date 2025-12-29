@@ -138,6 +138,7 @@ public:
   void lu(Matrix<T> &L, Matrix<T> &U, Matrix<T> &P) const;   // LU Decomposition
   void qr(Matrix<T> &Q, Matrix<T> &R) const;               // QR Decomposition
   void eigen(Matrix<T> &V, Matrix<T> &D) const;            // Eigenvalue Decomposition
+  Matrix<T> eigenvalues() const;                           // Return eigenvalues as a column vector
   void svd(Matrix<T> &U, Matrix<T> &S, Matrix<T> &Vt) const; // Singular Value Decomposition
   T determinant() const;                               // Determinant
   int rank() const;                                    // Matrix Rank
@@ -1399,6 +1400,20 @@ void Matrix<T>::eigen(Matrix<T> &V, Matrix<T> &D) const // Eigenvalue Decomposit
         }
     }
 }
+
+template <class T>
+Matrix<T> Matrix<T>::eigenvalues() const
+{
+    Matrix<T> V, D;
+    this->eigen(V, D);
+    Matrix<T> eigVals(rows_, 1);
+    for (int i = 0; i < rows_; i++)
+    {
+        eigVals.v[i][0] = D.v[i][i];
+    }
+    return eigVals;
+}
+
 
 
 
