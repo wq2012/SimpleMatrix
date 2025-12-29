@@ -1,5 +1,22 @@
 # SimpleMatrix [![C/C++ CI](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml)
 
+## Table of Contents
+* [About](#about)
+* [Integration](#integration)
+* [Quick Start](#quick-start)
+* [API Reference](#api-reference)
+    * [Constructors](#constructors)
+    * [Accessors](#accessors)
+    * [Basic Operations](#basic-operations)
+    * [Arithmetic & Math](#arithmetic--math)
+    * [Statistics](#statistics)
+    * [Algorithms](#algorithms)
+* [Building and Testing](#building-and-testing)
+    * [Prerequisites](#prerequisites)
+    * [Build Commands](#build-commands)
+* [Citation](#citation)
+* [Copyright](#copyright)
+
 ## About
 SimpleMatrix is an extremely lightweight C++ matrix library, consisting of a single header file `SimpleMatrix.h`. It is designed for simplicity and ease of integration.
 
@@ -70,21 +87,21 @@ int main() {
 
 ### Accessors
 *   `void set(int r, int c, T value)`: Set element at (r, c).
-*   `T get(int r, int c)`: Get element at (r, c).
-*   `int rows()`: Get number of rows.
-*   `int columns()`: Get number of columns.
-*   `void print()`: Print matrix to variables formatted output.
-*   `void saveTxt(const char* filename)`: Save matrix to text file.
-*   `Matrix* copy()`: Return a pointer to a deep copy of the matrix.
+*   `T get(int r, int c) const`: Get element at (r, c).
+*   `int rows() const`: Get number of rows.
+*   `int columns() const`: Get number of columns.
+*   `void print() const`: Print matrix to formatted output.
+*   `void saveTxt(const char* filename) const`: Save matrix to text file.
+*   `Matrix<T> copy() const`: Return a deep copy of the matrix.
 
 ### Basic Operations
-*   `Matrix* transpose()`: Return a new transposed matrix.
-*   `Matrix* sub(int r1, int r2, int c1, int c2)`: Return submatrix from (r1,c1) to (r2,c2).
-*   `Matrix* concatenateRight(Matrix* A)`: Concatenate `A` to the right.
-*   `Matrix* concatenateBottom(Matrix* A)`: Concatenate `A` to the bottom.
+*   `Matrix<T> transpose() const`: Return a new transposed matrix.
+*   `Matrix<T> sub(int r1, int r2, int c1, int c2) const`: Return submatrix from (r1,c1) to (r2,c2).
+*   `Matrix<T> concatenateRight(const Matrix<T>& A) const`: Concatenate `A` to the right.
+*   `Matrix<T> concatenateBottom(const Matrix<T>& A) const`: Concatenate `A` to the bottom.
 
 ### Arithmetic & Math
-All methods ending with `Self` modify the instance in-place. Methods ending with `New` or operator overloads return a new `Matrix` object.
+All methods ending with `Self` modify the instance in-place. Methods ending with `New` or operator overloads return a new `Matrix` object by value.
 
 *   **Operators:** `+`, `-`, `*` (Matrix Multiplication).
 *   **Scalar:** `addNumberSelf`, `subtractNumberSelf`, `multiplyNumberSelf`, `divideNumberSelf`.
@@ -92,24 +109,24 @@ All methods ending with `Self` modify the instance in-place. Methods ending with
 *   **Math Functions:** `exp()`, `log()`, `sqrt()`, `power(p)`.
 
 ### Statistics
-*   `T sum()`: Sum of all elements.
-*   `double mean()`: Mean of all elements.
-*   `double std()`: Standard deviation.
-*   `T minEl(int& r, int& c)`: Minimum element (stores indices in r, c).
-*   `T maxEl(int& r, int& c)`: Maximum element (stores indices in r, c).
-*   `T trace()`: Trace of the matrix.
-*   `double fnorm()`: Frobenius norm.
-*   `double pnorm(double p)`: p-norm.
+*   `T sum() const`: Sum of all elements.
+*   `double mean() const`: Mean of all elements.
+*   `double std() const`: Standard deviation.
+*   `T minEl(int& r, int& c) const`: Minimum element (stores indices in r, c).
+*   `T maxEl(int& r, int& c) const`: Maximum element (stores indices in r, c).
+*   `T trace() const`: Trace of the matrix.
+*   `double fnorm() const`: Frobenius norm.
+*   `double pnorm(double p) const`: p-norm.
 
 ### Algorithms
-*   `void lu(Matrix*& L, Matrix*& U, Matrix*& P)`: LU Decomposition ($PA = LU$).
-*   `void qr(Matrix*& Q, Matrix*& R)`: QR Decomposition ($A = QR$).
-*   `void eigen(Matrix*& V, Matrix*& D)`: Eigenvalue Decomposition for symmetric matrices ($A V = V D$).
-*   `void svd(Matrix*& U, Matrix*& S, Matrix*& Vt)`: Singular Value Decomposition ($A = U S V^T$).
-*   `T determinant()`: Compute determinant.
-*   `int rank()`: Compute rank (number of singular values > threshold).
-*   `Matrix* inverse()`: Compute inverse matrix.
-*   `Matrix* solve(Matrix* B)`: Solve linear system $Ax=B$.
+*   `void lu(Matrix<T>& L, Matrix<T>& U, Matrix<T>& P) const`: LU Decomposition ($PA = LU$).
+*   `void qr(Matrix<T>& Q, Matrix<T>& R) const`: QR Decomposition ($A = QR$).
+*   `void eigen(Matrix<T>& V, Matrix<T>& D) const`: Eigenvalue Decomposition for symmetric matrices ($A V = V D$).
+*   `void svd(Matrix<T>& U, Matrix<T>& S, Matrix<T>& Vt) const`: Singular Value Decomposition ($A = U S V^T$).
+*   `T determinant() const`: Compute determinant.
+*   `int rank() const`: Compute rank.
+*   `Matrix<T> inverse() const`: Compute inverse matrix.
+*   `Matrix<T> solve(const Matrix<T>& B) const`: Solve linear system $Ax=B$.
 *   `MDS_SMACOF(...)`: Multidimensional Scaling using SMACOF.
 *   `MDS_UCF(...)`: Multidimensional Scaling using UCF method.
 
