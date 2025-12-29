@@ -8,17 +8,19 @@ SimpleMatrix is an extremely lightweight C++ matrix library, consisting of a sin
 *   **Template Class:** Supports varying precision (e.g., `float`, `double`).
 *   **Core Operations:** Implements essential matrix operations like addition, subtraction, multiplication, transposition, and submatrix extraction.
 *   **Memory Safe:** Handles memory allocation and deallocation automatically (RAII compliant copy/assignment).
-*   **Advanced Algorithms:** Includes LU, QR, Eigenvalue (Symmetric), SVD decompositions, Determinant, and Inverse.
+*   **Advanced Algorithms:** Includes LU, QR, Eigenvalue (Symmetric), SVD decompositions, Determinant, Inverse, and Linear Solver.
 *   **MDS Algorithm:** Includes Multidimensional Scaling (MDS) algorithms (SMACOF and UCF versions).
+*   **Modern C++ (C++11):** Supports Move Semantics and Initializer Lists for efficient and convenient usage.
+*   **Robust:** Uses standard C++ exceptions for error handling.
 
 **Limitations:**
 *   Eigenvalue decomposition is currently implemented for symmetric matrices only.
+*   Requires a C++11 compliant compiler.
 
 ## Integration
-To use SimpleMatrix, simply include the header file in your C++ source code:
-
-```cpp
-#include "SimpleMatrix.h"
+Simply include `SimpleMatrix.h` in your project. Ensure you compile with C++11 support:
+```bash
+g++ -std=c++11 your_code.cpp -o your_program
 ```
 
 The library uses the `smat` namespace.
@@ -31,7 +33,12 @@ The library uses the `smat` namespace.
 
 int main() {
     // Initialize a 3x3 matrix with value 1.0
-    smat::Matrix<double> A(3, 3, 1.0);
+    // Initialize with C++11 list
+    smat::Matrix<double> A = {{1, 2}, {3, 4}};
+
+    // Or with size
+    smat::Matrix<double> B(3, 3);
+    B.set(0, 0, 1.0);
     
     // Set an element
     A.set(0, 0, 5.0);
@@ -102,6 +109,7 @@ All methods ending with `Self` modify the instance in-place. Methods ending with
 *   `T determinant()`: Compute determinant.
 *   `int rank()`: Compute rank (number of singular values > threshold).
 *   `Matrix* inverse()`: Compute inverse matrix.
+*   `Matrix* solve(Matrix* B)`: Solve linear system $Ax=B$.
 *   `MDS_SMACOF(...)`: Multidimensional Scaling using SMACOF.
 *   `MDS_UCF(...)`: Multidimensional Scaling using UCF method.
 

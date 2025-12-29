@@ -19,6 +19,9 @@
 #include <cstring>
 #include <ctime>
 #include <cmath>
+#include <initializer_list>
+#include <utility>
+#include <stdexcept>
 
 #define MAX_LINE_LENGTH 100000
 #define EPSILON 0.0000001
@@ -38,7 +41,10 @@ public:
   Matrix(int rows, int columns, std::string type); // special matrix such as I
   Matrix(const char *filename);                    // load matrix from txt file
   Matrix(const Matrix &other);                     // copy constructor
+  Matrix(Matrix &&other);                          // move constructor
+  Matrix(std::initializer_list<std::initializer_list<T>> list); // initializer list
   Matrix &operator=(const Matrix &other);          // assignment operator
+  Matrix &operator=(Matrix &&other);               // move assignment operator
   ~Matrix();                                       // destruction
 
   void set(int r, int c, T value); // row, column, value
@@ -115,6 +121,7 @@ public:
   T determinant();                               // Determinant
   int rank();                                    // Matrix Rank
   Matrix *inverse();                             // Matrix Inverse
+  Matrix *solve(Matrix *B);                      // Solve Ax=B
 
   // Operator overloading
   Matrix<T> operator+(const Matrix<T> &other);
@@ -177,17 +184,17 @@ Matrix<T>::Matrix(int rows, int columns) // initialization without assigning val
 {
   if (rows < 1 || columns < 1)
   {
-    printf("Invalid construction arguments: rows=%d, columns=%d\n", rows, columns);
-    exit(1);
+    throw std::invalid_argument("Invalid construction arguments: rows=" + std::to_string(rows) + ", columns=" + std::to_string(columns));
   }
 
   rows_ = rows;
   columns_ = columns;
 
   v = new T *[rows];
-  for (int i = 0; i < rows; i++)
+  v[0] = new T[rows * columns];
+  for (int i = 1; i < rows; i++)
   {
-    v[i] = new T[columns];
+    v[i] = v[i - 1] + columns;
   }
 }
 
@@ -196,18 +203,21 @@ Matrix<T>::Matrix(int rows, int columns, T value) // initialization with all sam
 {
   if (rows < 1 || columns < 1)
   {
-    printf("Invalid construction arguments: rows=%d, columns=%d\n", rows, columns);
-    exit(1);
+    throw std::invalid_argument("Invalid construction arguments: rows=" + std::to_string(rows) + ", columns=" + std::to_string(columns));
   }
 
   rows_ = rows;
   columns_ = columns;
 
   v = new T *[rows];
+  v[0] = new T[rows * columns];
+  for (int i = 1; i < rows; i++)
+  {
+    v[i] = v[i - 1] + columns;
+  }
+  
   for (int i = 0; i < rows; i++)
   {
-    v[i] = new T[columns];
-
     for (int j = 0; j < columns; j++)
     {
       v[i][j] = value;
@@ -220,16 +230,16 @@ Matrix<T>::Matrix(int rows, int columns, std::string type) // special matrix suc
 {
   if (rows < 1 || columns < 1)
   {
-    printf("Invalid construction arguments: rows=%d, columns=%d\n", rows, columns);
-    exit(1);
+    throw std::invalid_argument("Invalid construction arguments: rows=" + std::to_string(rows) + ", columns=" + std::to_string(columns));
   }
   rows_ = rows;
   columns_ = columns;
 
   v = new T *[rows];
-  for (int i = 0; i < rows; i++)
+  v[0] = new T[rows * columns];
+  for (int i = 1; i < rows; i++)
   {
-    v[i] = new T[columns];
+    v[i] = v[i - 1] + columns;
   }
 
   if (type.compare("I") == 0)
@@ -304,9 +314,82 @@ Matrix<T>::Matrix(int rows, int columns, std::string type) // special matrix suc
 
   else
   {
-    printf("Undefined matrix type: %s\n", type.c_str());
-    exit(1);
+    throw std::invalid_argument("Undefined matrix type: " + type);
   }
+}
+
+template <class T>
+Matrix<T>::Matrix(Matrix &&other) : rows_(0), columns_(0), v(NULL) // move constructor
+{
+  rows_ = other.rows_;
+  columns_ = other.columns_;
+  v = other.v;
+
+  other.rows_ = 0;
+  other.columns_ = 0;
+  other.v = NULL;
+}
+
+template <class T>
+Matrix<T>::Matrix(std::initializer_list<std::initializer_list<T>> list) // initializer list
+{
+  rows_ = list.size();
+  if (rows_ == 0)
+  {
+    columns_ = 0;
+    v = NULL;
+    return;
+  }
+  columns_ = list.begin()->size();
+
+  v = new T *[rows_];
+  v[0] = new T[rows_ * columns_];
+  for(int i=1; i<rows_; i++) {
+        v[i] = v[i-1] + columns_;
+  }
+  
+  int i = 0;
+  for (const auto &row : list)
+  {
+    if ((int)row.size() != columns_)
+    {
+      printf("All rows in initializer list must have the same size.\n");
+      exit(1);
+    }
+    // v[i] is already set
+    int j = 0;
+    for (const auto &val : row)
+    {
+      v[i][j] = val;
+      j++;
+    }
+    i++;
+  }
+}
+
+template <class T>
+Matrix<T> &Matrix<T>::operator=(Matrix &&other) // move assignment operator
+{
+  if (this != &other)
+  {
+    // release current memory
+    if (v != NULL)
+    {
+      delete[] v[0];
+      delete[] v;
+    }
+
+    // steal resources
+    rows_ = other.rows_;
+    columns_ = other.columns_;
+    v = other.v;
+
+    // nullify other
+    other.rows_ = 0;
+    other.columns_ = 0;
+    other.v = NULL;
+  }
+  return *this;
 }
 
 template <class T>
@@ -320,8 +403,7 @@ Matrix<T>::Matrix(const char *filename)
   pFile = fopen(filename, "r");
   if (pFile == NULL)
   {
-    printf("File \"%s\" cannot be found.\n", filename);
-    exit(1);
+    throw std::runtime_error(std::string("File \"") + filename + "\" cannot be found.");
   }
   char line[MAX_LINE_LENGTH];
   char *token = NULL;
@@ -360,10 +442,12 @@ Matrix<T>::Matrix(const char *filename)
   rows_ = rows;
   columns_ = columns;
   v = new T *[rows];
-  for (int i = 0; i < rows; i++)
+  v[0] = new T[rows * columns];
+  for (int i = 1; i < rows; i++)
   {
-    v[i] = new T[columns];
+    v[i] = v[i - 1] + columns;
   }
+
 
   pFile = fopen(filename, "r");
   if (pFile == NULL)
@@ -395,9 +479,14 @@ Matrix<T>::Matrix(const Matrix &other) // copy constructor
   rows_ = other.rows_;
   columns_ = other.columns_;
   v = new T *[rows_];
+  v[0] = new T[rows_ * columns_];
+  for (int i = 1; i < rows_; i++)
+  {
+    v[i] = v[i - 1] + columns_;
+  }
+
   for (int i = 0; i < rows_; i++)
   {
-    v[i] = new T[columns_];
     for (int j = 0; j < columns_; j++)
     {
       v[i][j] = other.v[i][j];
@@ -410,18 +499,24 @@ Matrix<T> &Matrix<T>::operator=(const Matrix &other) // assignment operator
 {
   if (this != &other)
   {
-    for (int i = 0; i < rows_; i++)
+    if (rows_ != other.rows_ || columns_ != other.columns_)
     {
-      delete[] v[i];
+      if (v != NULL)
+      {
+        delete[] v[0];
+        delete[] v;
+      }
+      rows_ = other.rows_;
+      columns_ = other.columns_;
+      v = new T *[rows_];
+      v[0] = new T[rows_ * columns_];
+      for (int i = 1; i < rows_; i++)
+      {
+        v[i] = v[i - 1] + columns_;
+      }
     }
-    delete[] v;
-
-    rows_ = other.rows_;
-    columns_ = other.columns_;
-    v = new T *[rows_];
     for (int i = 0; i < rows_; i++)
     {
-      v[i] = new T[columns_];
       for (int j = 0; j < columns_; j++)
       {
         v[i][j] = other.v[i][j];
@@ -434,11 +529,11 @@ Matrix<T> &Matrix<T>::operator=(const Matrix &other) // assignment operator
 template <class T>
 Matrix<T>::~Matrix() // destruction
 {
-  for (int i = 0; i < rows_; i++)
+  if (v != NULL)
   {
-    delete[](T *) v[i];
+    delete[] v[0]; // delete data
+    delete[] v;    // delete row pointers
   }
-  delete[] v;
 }
 
 template <class T>
@@ -446,8 +541,7 @@ void Matrix<T>::set(int r, int c, T value) // row, column, value
 {
   if (r < 0 || r >= rows_ || c < 0 || c >= columns_)
   {
-    printf("Invalid index in set(): r=%d, c=%d\n", r, c);
-    exit(1);
+    throw std::out_of_range("Invalid index in set(): r=" + std::to_string(r) + ", c=" + std::to_string(c));
   }
   v[r][c] = value;
 }
@@ -457,8 +551,7 @@ T Matrix<T>::get(int r, int c) // row, column
 {
   if (r < 0 || r >= rows_ || c < 0 || c >= columns_)
   {
-    printf("Invalid index in get(): r=%d, c=%d\n", r, c);
-    exit(1);
+    throw std::out_of_range("Invalid index in get(): r=" + std::to_string(r) + ", c=" + std::to_string(c));
   }
   return v[r][c];
 }
@@ -511,8 +604,7 @@ void Matrix<T>::saveTxt(const char *filename)
   pFile = fopen(filename, "w");
   if (pFile == NULL)
   {
-    printf("Cannot save to file \"%s\".\n", filename);
-    exit(1);
+    throw std::runtime_error(std::string("Cannot save to file \"") + filename + "\".");
   }
   for (int i = 0; i < rows_; i++)
   {
@@ -545,8 +637,7 @@ Matrix<T> *Matrix<T>::sub(int r1, int r2, int c1, int c2) // submatrix
 {
   if (r1 < 0 || r1 >= rows_ || r2 < 0 || r2 >= rows_ || r2 < r1 || c1 < 0 || c1 >= columns_ || c2 < 0 || c2 >= columns_ || c2 < c1)
   {
-    printf("Invalid submatrix indices.\n");
-    exit(1);
+    throw std::out_of_range("Invalid submatrix indices.");
   }
 
   int newRows = r2 - r1 + 1;
@@ -802,8 +893,7 @@ void Matrix<T>::addMatrixSelf(Matrix *A) // add a matrix to itself in space
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix summation.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix summation.");
   }
 
   for (int i = 0; i < rows_; i++)
@@ -820,8 +910,7 @@ void Matrix<T>::subtractMatrixSelf(Matrix *A)
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix subtraction.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix subtraction.");
   }
 
   for (int i = 0; i < rows_; i++)
@@ -838,8 +927,7 @@ void Matrix<T>::dotMultiplyMatrixSelf(Matrix *A) // dot multiply a matrix to its
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix dot multiplication.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix dot multiplication.");
   }
 
   for (int i = 0; i < rows_; i++)
@@ -856,8 +944,7 @@ void Matrix<T>::dotDivideMatrixSelf(Matrix *A)
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix dot division.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix dot division.");
   }
 
   for (int i = 0; i < rows_; i++)
@@ -874,8 +961,7 @@ Matrix<T> *Matrix<T>::addMatrixNew(Matrix *A) // add a matrix to itself with new
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix summation.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix summation.");
   }
 
   Matrix<T> *B = new Matrix<T>(rows_, columns_);
@@ -894,8 +980,7 @@ Matrix<T> *Matrix<T>::subtractMatrixNew(Matrix *A)
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix subtraction.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix subtraction.");
   }
 
   Matrix<T> *B = new Matrix<T>(rows_, columns_);
@@ -914,8 +999,7 @@ Matrix<T> *Matrix<T>::dotMultiplyMatrixNew(Matrix *A) // dot multiply a matrix t
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix dot multiplication.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix dot multiplication.");
   }
 
   Matrix<T> *B = new Matrix<T>(rows_, columns_);
@@ -934,8 +1018,7 @@ Matrix<T> *Matrix<T>::dotDivideMatrixNew(Matrix *A)
 {
   if (rows_ != A->rows() || columns_ != A->columns())
   {
-    printf("Unmatched matrix sizes in matrix dot division.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix dot division.");
   }
 
   Matrix<T> *B = new Matrix<T>(rows_, columns_);
@@ -954,8 +1037,7 @@ Matrix<T> *Matrix<T>::multiplyMatrixNew(Matrix *A) // multiply a matrix to itsel
 {
   if (columns_ != A->rows())
   {
-    printf("Unmatched matrix sizes in matrix multiplication.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in matrix multiplication.");
   }
 
   Matrix<T> *B = new Matrix<T>(rows_, A->columns());
@@ -980,8 +1062,7 @@ Matrix<T> *Matrix<T>::concatenateRight(Matrix *A)
 {
   if (rows_ != A->rows())
   {
-    printf("Unmatched matrix rows in concatenation.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix rows in concatenation.");
   }
   Matrix<T> *B = new Matrix<T>(rows_, columns_ + A->columns());
   for (int i = 0; i < rows_; i++)
@@ -997,8 +1078,7 @@ Matrix<T> *Matrix<T>::concatenateBottom(Matrix *A)
 {
   if (columns_ != A->columns())
   {
-    printf("Unmatched matrix columns in concatenation.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix columns in concatenation.");
   }
   Matrix<T> *B = new Matrix<T>(rows_ + A->rows(), columns_);
   for(int j=0; j<columns_; j++)
@@ -1014,8 +1094,7 @@ Matrix<T> Matrix<T>::operator+(const Matrix<T> &other)
 {
   if (rows_ != other.rows_ || columns_ != other.columns_)
   {
-    printf("Unmatched matrix sizes in operator+.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in operator+.");
   }
   Matrix<T> res(rows_, columns_);
   for(int i=0; i<rows_; i++)
@@ -1029,8 +1108,7 @@ Matrix<T> Matrix<T>::operator-(const Matrix<T> &other)
 {
   if (rows_ != other.rows_ || columns_ != other.columns_)
   {
-    printf("Unmatched matrix sizes in operator-.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in operator-.");
   }
   Matrix<T> res(rows_, columns_);
   for(int i=0; i<rows_; i++)
@@ -1044,8 +1122,7 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T> &other)
 {
   if (columns_ != other.rows_)
   {
-    printf("Unmatched matrix sizes in operator*.\n");
-    exit(1);
+    throw std::invalid_argument("Unmatched matrix sizes in operator*.");
   }
   Matrix<T> res(rows_, other.columns_);
   for (int i = 0; i < rows_; i++)
@@ -1068,8 +1145,7 @@ void Matrix<T>::lu(Matrix *&L, Matrix *&U, Matrix *&P) // LU Decomposition
 {
   if (rows_ != columns_)
   {
-    printf("LU decomposition requires square matrix.\n");
-    exit(1);
+    throw std::invalid_argument("LU decomposition requires square matrix.");
   }
   int n = rows_;
   L = new Matrix<T>(n, n, 0.0);
@@ -1153,8 +1229,7 @@ T Matrix<T>::determinant() // Determinant
 {
   if (rows_ != columns_)
   {
-    printf("Determinant requires square matrix.\n");
-    exit(1);
+    throw std::invalid_argument("Determinant requires square matrix.");
   }
   
   // Custom simple Gaussian elimination for det to avoid full LU overhead if desired,
@@ -1228,8 +1303,7 @@ Matrix<T>* Matrix<T>::inverse() // Matrix Inverse
         if(std::abs((double)A->get(j, i)) > std::abs((double)A->get(pivot, i))) pivot = j;
         
       if(std::abs((double)A->get(pivot, i)) < EPSILON) {
-          printf("Matrix is singular, cannot find inverse.\n");
-          exit(1);
+          throw std::runtime_error("Matrix is singular, cannot find inverse.");
       }
       
       // Swap rows in A and Inv
@@ -1264,14 +1338,72 @@ Matrix<T>* Matrix<T>::inverse() // Matrix Inverse
 }
 
 template <class T>
+Matrix<T>* Matrix<T>::solve(Matrix *B) // Solve Ax=B
+{
+    if (rows_ != columns_)
+    {
+        throw std::invalid_argument("Matrix must be square to solve system.");
+    }
+    if (rows_ != B->rows())
+    {
+        throw std::invalid_argument("Matrix row dimensions must agree.");
+    }
+
+    Matrix<T> *L, *U, *P;
+    this->lu(L, U, P);
+
+    // Ax = B -> LUx = PB
+    // Let y = Ux, then Ly = PB
+    
+    // 1. Compute PB
+    Matrix<T> *PB = P->multiplyMatrixNew(B);
+    
+    // 2. Solve Ly = PB (Forward substitution)
+    Matrix<T> *y = new Matrix<T>(rows_, B->columns());
+    for(int k=0; k<B->columns(); k++)
+    {
+        for(int i=0; i<rows_; i++)
+        {
+            double sum = 0;
+            for(int j=0; j<i; j++)
+            {
+                sum += (double)L->get(i, j) * y->get(j, k);
+            }
+            y->set(i, k, (PB->get(i, k) - sum)); // L diagonal is 1
+        }
+    }
+    
+    // 3. Solve Ux = y (Backward substitution)
+    Matrix<T> *x = new Matrix<T>(rows_, B->columns());
+    for(int k=0; k<B->columns(); k++)
+    {
+        for(int i=rows_-1; i>=0; i--)
+        {
+            double sum = 0;
+            for(int j=i+1; j<columns_; j++)
+            {
+                sum += (double)U->get(i, j) * x->get(j, k);
+            }
+            if (std::abs((double)U->get(i, i)) < EPSILON)
+            {
+                throw std::runtime_error("Matrix is singular.");
+            }
+            x->set(i, k, (y->get(i, k) - sum) / (double)U->get(i, i));
+        }
+    }
+    
+    delete L; delete U; delete P; delete PB; delete y;
+    return x;
+}
+
+template <class T>
 void Matrix<T>::qr(Matrix *&Q, Matrix *&R) // QR Decomposition
 {
     // Householder transformations
     // A = Q R
     // R is upper triangular, Q is orthogonal
     if (rows_ < columns_) {
-        printf("QR decomposition requires rows >= columns.\n");
-        exit(1);
+        throw std::invalid_argument("QR decomposition requires rows >= columns.");
     }
     
     int m = rows_;
@@ -1406,8 +1538,7 @@ void Matrix<T>::eigen(Matrix *&V, Matrix *&D) // Eigenvalue Decomposition
     // A V = V D
     if (rows_ != columns_)
     {
-      printf("Eigen decomposition requires square matrix.\n");
-      exit(1);
+      throw std::invalid_argument("Eigen decomposition requires square matrix.");
     }
     
     int n = rows_;
@@ -1639,13 +1770,11 @@ void EuclideanDistanceMatrix(Matrix<double> *X, Matrix<double> *D)
   double temp;
   if (D == NULL)
   {
-    printf("Input matrix pointer is NULL.\n");
-    exit(1);
+    throw std::invalid_argument("Input matrix pointer is NULL.");
   }
   else if (X->rows() != D->rows() || X->rows() != D->columns())
   {
-    printf("Invalid distance matrix dimension.\n");
-    exit(1);
+    throw std::invalid_argument("Invalid distance matrix dimension.");
   }
 
   for (i = 0; i < D->rows(); i++)
@@ -1678,13 +1807,11 @@ void ElementCopy(Matrix<double> *X, Matrix<double> *Y)
 {
   if (Y == NULL)
   {
-    printf("Input matrix pointer is NULL.\n");
-    exit(1);
+    throw std::invalid_argument("Input matrix pointer is NULL.");
   }
   else if (X->rows() != Y->rows() || X->columns() != Y->columns())
   {
-    printf("Invalid matrix dimension.\n");
-    exit(1);
+    throw std::invalid_argument("Invalid matrix dimension.");
   }
   for (int i = 0; i < X->rows(); i++)
   {
@@ -1702,18 +1829,15 @@ Matrix<double> *MDS_UCF(Matrix<double> *D, Matrix<double> *X0, int dim, int iter
 {
   if (D->rows() != D->columns())
   {
-    printf("Input distance matrix to MDS is not square.\n");
-    exit(1);
+    throw std::invalid_argument("Input distance matrix to MDS is not square.");
   }
   if (dim < 1)
   {
-    printf("Invalid dimension for MDS.\n");
-    exit(1);
+    throw std::invalid_argument("Invalid dimension for MDS.");
   }
   if (iter < 1)
   {
-    printf("Invalid number of iterations for MDS.\n");
-    exit(1);
+    throw std::invalid_argument("Invalid number of iterations for MDS.");
   }
 
   Matrix<double> *X = NULL;
@@ -1723,8 +1847,7 @@ Matrix<double> *MDS_UCF(Matrix<double> *D, Matrix<double> *X0, int dim, int iter
   {
     if (X0->rows() != D->rows() || X0->columns() != dim)
     {
-      printf("Input initialization to MDS has invalid dimension.\n");
-      exit(1);
+      throw std::invalid_argument("Input initialization to MDS has invalid dimension.");
     }
     X = X0->copy();
   }
@@ -1751,68 +1874,69 @@ Matrix<double> *MDS_UCF(Matrix<double> *D, Matrix<double> *X0, int dim, int iter
   double temp;
   int m;
 
-  printf("MDS iteration:");
+  printf("\n[MDS] Iterations:\n");
   for (int it = 0; it < iter; it++) // iterations
   {
     if (it % 10 == 0)
-      printf("\n");
+      printf("\n[MDS] ");
     printf("%3d  ", it + 1);
     for (int rp = 0; rp < n; rp++) // work on each vector in a randomly permuted order
     {
-      m = RP->get(rp, it) - 1;
+       // ... existing code ...
+       m = RP->get(rp, it) - 1;
 
-      for (i = 0; i < n; i++)
-      {
-        for (j = 0; j < dim; j++)
-        {
-          pmat->set(i, j, X->get(m, j) - X->get(i, j));
-        }
-      }
+       for (i = 0; i < n; i++)
+       {
+         for (j = 0; j < dim; j++)
+         {
+           pmat->set(i, j, X->get(m, j) - X->get(i, j));
+         }
+       }
 
-      for (i = 0; i < n; i++)
-      {
-        temp = 0;
-        for (j = 0; j < dim; j++)
-        {
-          temp += pow(fabs(pmat->get(i, j)), r);
-        }
-        dhdum->set(i, 0, pow(temp, 1 / r));
-      }
+       for (i = 0; i < n; i++)
+       {
+         temp = 0;
+         for (j = 0; j < dim; j++)
+         {
+           temp += pow(fabs(pmat->get(i, j)), r);
+         }
+         dhdum->set(i, 0, pow(temp, 1 / r));
+       }
 
-      for (i = 0; i < n; i++)
-      {
-        if (i == m)
-          continue;
+       for (i = 0; i < n; i++)
+       {
+         if (i == m)
+           continue;
 
-        dh->set(m, i, dhdum->get(i, 0));
-        dh->set(i, m, dhdum->get(i, 0));
-      }
+         dh->set(m, i, dhdum->get(i, 0));
+         dh->set(i, m, dhdum->get(i, 0));
+       }
 
-      for (i = 0; i < n - 1; i++)
-      {
-        int ii = i;
-        if (i >= m)
-          ii = i + 1;
-        temp = lr * (dhdum->get(ii, 0) - D->get(ii, m)) * pow(dhdum->get(ii, 0), 1 - r);
-        for (j = 0; j < dim; j++)
-        {
-          dhmat->set(i, j, temp);
-        }
-      }
+       for (i = 0; i < n - 1; i++)
+       {
+         int ii = i;
+         if (i >= m)
+           ii = i + 1;
+         temp = lr * (dhdum->get(ii, 0) - D->get(ii, m)) * pow(dhdum->get(ii, 0), 1 - r);
+         for (j = 0; j < dim; j++)
+         {
+           dhmat->set(i, j, temp);
+         }
+       }
 
-      for (i = 0; i < n - 1; i++)
-      {
-        int ii = i;
-        if (i >= m)
-          ii = i + 1;
-        for (j = 0; j < dim; j++)
-        {
-          temp = X->get(ii, j);
-          temp += dhmat->get(i, j) * pow(fabs(pmat->get(ii, j)), r - 1) * sign<double>(pmat->get(ii, j));
+       for (i = 0; i < n - 1; i++)
+       {
+         int ii = i;
+         if (i >= m)
+           ii = i + 1;
+         for (j = 0; j < dim; j++)
+         {
+           temp = X->get(ii, j);
+           temp += dhmat->get(i, j) * pow(fabs(pmat->get(ii, j)), r - 1) * sign<double>(pmat->get(ii, j));
 
-          X->set(ii, j, temp);
-        }
-      }
+           X->set(ii, j, temp);
+         }
+       }
     }
   }
 
@@ -1834,18 +1958,15 @@ Matrix<double> *MDS_SMACOF(Matrix<double> *D, Matrix<double> *X0, int dim, int i
 {
   if (D->rows() != D->columns())
   {
-    printf("Input distance matrix to MDS is not square.\n");
-    exit(1);
+    throw std::invalid_argument("Input distance matrix to MDS is not square.");
   }
   if (dim < 1)
   {
-    printf("Invalid dimension for MDS.\n");
-    exit(1);
+    throw std::invalid_argument("Invalid dimension for MDS.");
   }
   if (iter < 1)
   {
-    printf("Invalid number of iterations for MDS.\n");
-    exit(1);
+    throw std::invalid_argument("Invalid number of iterations for MDS.");
   }
 
   Matrix<double> *X = NULL;
@@ -1855,8 +1976,7 @@ Matrix<double> *MDS_SMACOF(Matrix<double> *D, Matrix<double> *X0, int dim, int i
   {
     if (X0->rows() != D->rows() || X0->columns() != dim)
     {
-      printf("Input initialization to MDS has invalid dimension.\n");
-      exit(1);
+      throw std::invalid_argument("Input initialization to MDS has invalid dimension.");
     }
     X = X0->copy();
   }
@@ -1877,11 +1997,11 @@ Matrix<double> *MDS_SMACOF(Matrix<double> *D, Matrix<double> *X0, int dim, int i
 
   EuclideanDistanceMatrix(X, D_);
 
-  printf("MDS iteration:");
+  printf("\n[MDS] Iterations:\n");
   for (int it = 0; it < iter; it++) // iterations
   {
     if (it % 10 == 0)
-      printf("\n");
+      printf("\n[MDS] ");
     printf("%3d  ", it + 1);
 
     // B = calc_B(D_,D);

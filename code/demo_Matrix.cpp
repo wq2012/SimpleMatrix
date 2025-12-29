@@ -35,25 +35,33 @@ int main(int argc, const char *argv[])
   int dim = 3;                                                        // number of dimensions
   int iter = 30;                                                      // number of iterations
 
-  printf("\nBegin to run MDS(UCF): \n");
+  printf("\n============================================\n");
+  printf("Begin to run MDS(UCF): \n");
+  printf("============================================\n");
 
   smat::Matrix<double> *X1 = MDS_UCF(D, NULL, dim, iter); // without initialization
-  printf("MDS done! \n");
+  printf("[PASS] MDS(UCF) done! \n");
   X1->saveTxt("swissX1.txt");
 
-  printf("\nBegin to run MDS(SMACOF): \n");
+  printf("\n============================================\n");
+  printf("Begin to run MDS(SMACOF): \n");
+  printf("============================================\n");
   smat::Matrix<double> *X2 = MDS_SMACOF(D, NULL, dim, iter); // without initialization
-  printf("MDS done! \n");
+  printf("[PASS] MDS(SMACOF) done! \n");
   X2->saveTxt("swissX2.txt");
 
-  printf("\nBegin to run MDS(UCF): \n");
+  printf("\n============================================\n");
+  printf("Begin to run MDS(UCF) with initialization: \n");
+  printf("============================================\n");
   smat::Matrix<double> *X3 = MDS_UCF(D, X0, dim, iter); // with initialization
-  printf("MDS done! \n");
+  printf("[PASS] MDS(UCF) done! \n");
   X3->saveTxt("swissX3.txt");
 
-  printf("\nBegin to run MDS(SMACOF): \n");
+  printf("\n============================================\n");
+  printf("Begin to run MDS(SMACOF) with initialization: \n");
+  printf("============================================\n");
   smat::Matrix<double> *X4 = MDS_SMACOF(D, X0, dim, iter); // with initialization
-  printf("MDS done! \n");
+  printf("[PASS] MDS(SMACOF) done! \n");
   X4->saveTxt("swissX4.txt");
 
   delete A;

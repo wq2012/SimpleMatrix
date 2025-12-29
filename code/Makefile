@@ -1,3 +1,6 @@
+CC = g++
+CFLAGS = -Wall -std=c++11
+
 .PHONY: all clean test run
 
 all: clean demo_Matrix.exe SimpleMatrixTest.exe
@@ -9,10 +12,10 @@ test: SimpleMatrixTest.exe
 	./SimpleMatrixTest.exe
 
 demo_Matrix.exe: demo_Matrix.cpp SimpleMatrix.h
-	g++ -Wall demo_Matrix.cpp -o demo_Matrix.exe
+	$(CC) $(CFLAGS) demo_Matrix.cpp -o demo_Matrix.exe
 
 SimpleMatrixTest.exe: SimpleMatrixTest.cpp SimpleMatrix.h
-	g++ -Wall SimpleMatrixTest.cpp -o SimpleMatrixTest.exe
+	$(CC) $(CFLAGS) SimpleMatrixTest.cpp -o SimpleMatrixTest.exe
 
 clean:
 	rm -f demo_Matrix.exe SimpleMatrixTest.exe

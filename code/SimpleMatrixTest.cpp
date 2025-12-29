@@ -26,8 +26,22 @@ void assertFloatEqual(float x, float y, float threshold = eps)
   }
 }
 
+void printTestHeader(const char* name)
+{
+  printf("\n============================================================\n");
+  printf("[TEST] %s\n", name);
+  printf("============================================================\n");
+}
+
+void printTestPass(const char* name)
+{
+  printf("[PASS] %s passed.\n", name);
+  printf("------------------------------------------------------------\n");
+}
+
 void test_basics()
 {
+  printTestHeader("Basics");
   smat::Matrix<double> *A = new smat::Matrix<double>(3, 4, 1);
   assertIntEq(A->get(2, 3), 1);
   A->set(2, 3, 5);
@@ -36,10 +50,12 @@ void test_basics()
   assertIntEq(A->rows(), 3);
   assertIntEq(A->columns(), 4);
   delete A;
+  printTestPass("Basics");
 }
 
 void test_statistics()
 {
+  printTestHeader("Statistics");
   smat::Matrix<double> *A = new smat::Matrix<double>(3, 4, 1);
   A->set(2, 3, 5);
   A->set(1, 1, -2); // A now has elements: most 1, one 5, one -2.
@@ -66,10 +82,12 @@ void test_statistics()
   assertFloatEqual(A->fnorm(), 6.245);
 
   delete A;
+  printTestPass("Statistics");
 }
 
 void test_scalar_operations()
 {
+  printTestHeader("Scalar Operations");
   smat::Matrix<double> *A = new smat::Matrix<double>(2, 2, 4.0);
   
   A->addNumberSelf(1.0);
@@ -85,10 +103,12 @@ void test_scalar_operations()
   assertFloatEqual(A->get(0, 0), 6.0);
   
   delete A;
+  printTestPass("Scalar Operations");
 }
 
 void test_math_functions()
 {
+  printTestHeader("Math Functions");
   smat::Matrix<double> *D = new smat::Matrix<double>(1, 1, 100.0);
   
   smat::Matrix<double> *SqrtD = D->sqrt();
@@ -105,10 +125,12 @@ void test_math_functions()
   delete LogE;
   delete ExpLogE;
   delete D;
+  printTestPass("Math Functions");
 }
 
 void test_matrix_arithmetic()
 {
+  printTestHeader("Matrix Arithmetic");
   smat::Matrix<double> *A = new smat::Matrix<double>(2, 2, 4.0);
   smat::Matrix<double> *B = new smat::Matrix<double>(2, 2, 2.0);
 
@@ -130,10 +152,12 @@ void test_matrix_arithmetic()
 
   delete A;
   delete B;
+  printTestPass("Matrix Arithmetic");
 }
 
 void test_concatenation()
 {
+  printTestHeader("Concatenation");
   smat::Matrix<double> *E = new smat::Matrix<double>(2, 2, 1.0);
   smat::Matrix<double> *F = new smat::Matrix<double>(2, 2, 2.0);
   
@@ -153,10 +177,12 @@ void test_concatenation()
 
   delete E;
   delete F;
+  printTestPass("Concatenation");
 }
 
 void test_operators()
 {
+  printTestHeader("Operators");
   smat::Matrix<double> M1(2, 2, 3.0);
   smat::Matrix<double> M2(2, 2, 2.0);
   
@@ -168,10 +194,12 @@ void test_operators()
   
   smat::Matrix<double> M5 = M1 - M2;
   assertFloatEqual(M5.get(0, 0), 1.0);
+  printTestPass("Operators");
 }
 
 void test_mds()
 {
+  printTestHeader("MDS");
   // Create a distance matrix for 4 points in a unit square:
   // (0,0), (0,1), (1,0), (1,1)
   // Distance matrix:
@@ -220,10 +248,12 @@ void test_mds()
   delete D;
   delete X;
   delete D_rec;
+  printTestPass("MDS");
 }
 
 void test_linear_algebra()
 {
+  printTestHeader("Linear Algebra");
   // Test Determinant
   smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
   // 1 2 3
@@ -257,10 +287,12 @@ void test_linear_algebra()
           assertFloatEqual(PA.get(i, j), LU.get(i, j));
           
   delete L; delete U; delete P; delete A;
+  printTestPass("Linear Algebra");
 }
 
 void test_qr()
 {
+  printTestHeader("QR Decomposition");
   smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
   // 12 -51 4
   // 6 167 -68
@@ -291,10 +323,12 @@ void test_qr()
   assertFloatEqual(R->get(2, 1), 0.0);
   
   delete Q; delete R; delete Qt; delete A;
+  printTestPass("QR Decomposition");
 }
 
 void test_eigen()
 {
+  printTestHeader("Eigen Decomposition");
   smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
   // Symmetric Matrix
   // 2 -1 0
@@ -326,10 +360,12 @@ void test_eigen()
   // But order is arbitrary. Just print or checking diagonal is enough.
   
   delete V; delete D; delete Vt; delete A;
+  printTestPass("Eigen Decomposition");
 }
 
 void test_svd()
 {
+  printTestHeader("SVD");
   smat::Matrix<double> *A = new smat::Matrix<double>(3, 2);
   // 1 2
   // 3 4
@@ -366,10 +402,12 @@ void test_svd()
          assertFloatEqual(VVt.get(i, j), (i==j)?1.0:0.0);
          
   delete U; delete S; delete Vt; delete Ut; delete V; delete A;
+  printTestPass("SVD");
 }
 
 void test_rank()
 {
+  printTestHeader("Rank");
   smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
   // Full rank
   // 1 0 0 
@@ -387,6 +425,62 @@ void test_rank()
   if (A->rank() != 1) { printf("Rank check failed (expected 1, got %d)\n", A->rank()); exit(1); }
   
   delete A;
+  printTestPass("Rank");
+}
+
+void test_cpp11_features()
+{
+  printTestHeader("C++11 features");
+  
+  // Test Initializer List
+  smat::Matrix<double> A = {{1.0, 2.0}, {3.0, 4.0}};
+  assertFloatEqual(A.get(0, 0), 1.0);
+  assertFloatEqual(A.get(0, 1), 2.0);
+  assertFloatEqual(A.get(1, 0), 3.0);
+  assertFloatEqual(A.get(1, 1), 4.0);
+  
+  // Test Move Constructor
+  smat::Matrix<double> B = std::move(A);
+  assertFloatEqual(B.get(0, 0), 1.0);
+  // A should be empty now
+  if(A.rows() != 0 || A.columns() != 0) {
+      printf("Move constructor failed to clear source.\n");
+      exit(1);
+  }
+  
+  // Test Move Assignment
+  smat::Matrix<double> C(2, 2);
+  C = std::move(B);
+  assertFloatEqual(C.get(1, 1), 4.0);
+  if(B.rows() != 0) {
+      printf("Move assignment failed to clear source.\n");
+      exit(1);
+  }
+  
+  printTestPass("C++11 features");
+}
+
+void test_solve()
+{
+  printTestHeader("solve()");
+  smat::Matrix<double> *A = new smat::Matrix<double>(3, 3);
+  // A = [1 2 3; 4 5 6; 7 8 10] (slightly changed from singular [1..9])
+  A->set(0,0,1); A->set(0,1,2); A->set(0,2,3);
+  A->set(1,0,4); A->set(1,1,5); A->set(1,2,6);
+  A->set(2,0,7); A->set(2,1,8); A->set(2,2,10);
+
+  smat::Matrix<double> *b = new smat::Matrix<double>(3, 1);
+  // Let x = [1; 1; 1], then b = Ax = [6; 15; 25]
+  b->set(0,0,6); b->set(1,0,15); b->set(2,0,25);
+  
+  smat::Matrix<double> *x = A->solve(b);
+  
+  assertFloatEqual(x->get(0,0), 1.0);
+  assertFloatEqual(x->get(1,0), 1.0);
+  assertFloatEqual(x->get(2,0), 1.0);
+  
+  printf("solve passed.\n");
+  delete A; delete b; delete x;
 }
 
 int main(int argc, const char *argv[])
@@ -404,6 +498,8 @@ int main(int argc, const char *argv[])
   test_eigen();
   test_svd();
   test_rank();
+  test_cpp11_features();
+  test_solve();
   std::cout << "All tests passed!" << std::endl;
   return 0;
 }
