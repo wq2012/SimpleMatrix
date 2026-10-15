@@ -12,10 +12,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: make_test_run
+    - uses: actions/checkout@v4
+    - name: Build and Run C and C++ Tests, Demos, and Examples
       run: |
         cd code
         make
-        ./SimpleMatrixTest.exe
-        ./demo_Matrix.exe
+        make test
+        make run
+        make examples
+        make clean

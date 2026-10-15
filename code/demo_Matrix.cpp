@@ -3,7 +3,7 @@
 
 using namespace std;
 
-int main(int argc, const char *argv[])
+int main()
 {
   // create matrix of same values
   smat::Matrix<double> A(3, 4, 1.0);
@@ -32,8 +32,8 @@ int main(int argc, const char *argv[])
   // input D is the geodesic distance matrix of a Swiss roll surface, and output X is the flattened surface
   smat::Matrix<double> D("swissD.txt");   // read the distance matrix from txt file
   smat::Matrix<double> X0("swissX0.txt"); // read the initialization matrix from txt file
-  int dim = 3;                                                        // number of dimensions
-  int iter = 30;                                                      // number of iterations
+  int dim = 3;                            // number of dimensions
+  int iter = 30;                          // number of iterations
 
   printf("\n============================================\n");
   printf("Begin to run MDS(UCF): \n");
