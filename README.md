@@ -1,6 +1,10 @@
 # SimpleMatrix [![C/C++ CI](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/wq2012/SimpleMatrix/actions/workflows/c-cpp.yml)
 
-**SimpleMatrix** is a lightweight, zero-dependency, single-header matrix and linear algebra library for **both Pure C (C99/C11) and C++ (C++11/14/17/20/23)**. Drop `SimpleMatrix.h` into any C or C++ project and immediately access a complete suite of matrix operations, decompositions, linear solvers, matrix exponentials, statistics, Principal Component Analysis (PCA), and Multidimensional Scaling (MDS).
+**SimpleMatrix** is a lightweight, zero-dependency, single-header matrix and linear algebra library providing dedicated, standalone headers for **C++ (`SimpleMatrix.h`)** and **Pure C (`SimpleMatrixC.h`)**:
+* **For C++ projects (C++11/14/17/20/23):** Include **`SimpleMatrix.h`**.
+* **For Pure C projects (C99/C11/C17):** Include **`SimpleMatrixC.h`**.
+
+Drop the appropriate header into your project to immediately access a complete suite of matrix operations, decompositions, linear solvers, matrix exponentials, statistics, Principal Component Analysis (PCA), and Multidimensional Scaling (MDS).
 
 ---
 
@@ -8,9 +12,9 @@
 * [Key Features](#key-features)
 * [Integration](#integration)
 * [Quick Start](#quick-start)
-  * [C++ Quick Start](#c-quick-start)
-  * [Pure C Quick Start](#pure-c-quick-start)
-* [C++ API Reference (`smat::Matrix<T>`)](#c-api-reference-smatmatrixt)
+  * [C++ Quick Start (`SimpleMatrix.h`)](#c-quick-start-simplematrixh)
+  * [Pure C Quick Start (`SimpleMatrixC.h`)](#pure-c-quick-start-simplematrixch)
+* [C++ API Reference (`SimpleMatrix.h` — `smat::Matrix<T>`)](#c-api-reference-simplematrixh--smatmatrixt)
   * [Constructors & Factory Methods](#constructors--factory-methods)
   * [Element Access, Indexing & Properties](#element-access-indexing--properties)
   * [Shape, Slicing & Concatenation](#shape-slicing--concatenation)
@@ -19,7 +23,7 @@
   * [Norms, Reductions & Statistics](#norms-reductions--statistics)
   * [Linear Algebra Decompositions & Solvers](#linear-algebra-decompositions--solvers)
   * [Dimensionality Reduction (PCA & MDS)](#dimensionality-reduction-pca--mds)
-* [Pure C API Reference (`smat_t`)](#pure-c-api-reference-smat_t)
+* [Pure C API Reference (`SimpleMatrixC.h` — `smat_t`)](#pure-c-api-reference-simplematrixch--smat_t)
   * [Types & Error Handling](#types--error-handling)
   * [Creation & Memory Management](#creation--memory-management)
   * [Accessors, Slicing & File I/O](#accessors-slicing--file-io)
@@ -33,7 +37,9 @@
 ---
 
 ## Key Features
-* **Single-Header Dual C / C++ Support:** Include `SimpleMatrix.h` directly in `.c` files (compiled with `gcc`/`clang`) or `.cpp` files (compiled with `g++`/`clang++`).
+* **Dedicated Single-Header Files for C++ and Pure C:**
+  * `code/SimpleMatrix.h`: 100% standalone C++ header (`smat::Matrix<T>`, aliases `smat::Matd`, `smat::Matf`, `smat::Mati`).
+  * `code/SimpleMatrixC.h`: 100% standalone Pure C header (`smat_t` / `SMatrix` and `smat_*` functions).
 * **Zero External Dependencies:** Uses only the standard C/C++ library.
 * **High Efficiency & Cache Locality:** Contiguous row-major storage with precomputed row pointers (`v[r][c]`) and cache-friendly `i-k-j` matrix multiplication.
 * **Memory Safe:** Automatic RAII management (`std::vector` backing with move semantics) in C++, and clean `smat_create` / `smat_free` lifecycle with null/bounds safety in Pure C.
@@ -47,13 +53,11 @@
 
 ## Integration
 
-Copy `code/SimpleMatrix.h` into your include path and `#include "SimpleMatrix.h"`.
-
-* **For C++ projects (C++11 or newer):**
+* **For C++ projects (C++11 or newer):** Copy `code/SimpleMatrix.h` into your project and `#include "SimpleMatrix.h"`:
   ```bash
   g++ -std=c++11 -O2 your_program.cpp -o your_program
   ```
-* **For Pure C projects (C99 / C11 or newer):**
+* **For Pure C projects (C99 / C11 or newer):** Copy `code/SimpleMatrixC.h` into your project and `#include "SimpleMatrixC.h"`:
   ```bash
   gcc -std=c11 -O2 your_program.c -lm -o your_program
   ```
@@ -62,7 +66,7 @@ Copy `code/SimpleMatrix.h` into your include path and `#include "SimpleMatrix.h"
 
 ## Quick Start
 
-### C++ Quick Start
+### C++ Quick Start (`SimpleMatrix.h`)
 
 ```cpp
 #include <iostream>
@@ -97,11 +101,11 @@ int main() {
 }
 ```
 
-### Pure C Quick Start
+### Pure C Quick Start (`SimpleMatrixC.h`)
 
 ```c
 #include <stdio.h>
-#include "SimpleMatrix.h"
+#include "SimpleMatrixC.h"
 
 int main(void) {
     // 1. Create matrices from array or factory functions
@@ -138,9 +142,9 @@ int main(void) {
 
 ---
 
-## C++ API Reference (`smat::Matrix<T>`)
+## C++ API Reference (`SimpleMatrix.h` — `smat::Matrix<T>`)
 
-All C++ classes and functions reside in the `smat` namespace. `Matrix<T>` supports `double`, `float`, and `int`.
+All C++ classes and functions reside in the `smat` namespace. `Matrix<T>` supports `double` (`smat::Matd`), `float` (`smat::Matf`), and `int` (`smat::Mati`).
 
 ### Constructors & Factory Methods
 * `Matrix()`: Default empty matrix ($0 \times 0$).
@@ -160,6 +164,8 @@ All C++ classes and functions reside in the `smat` namespace. `Matrix<T>` suppor
   * `Matrix<T>::ones(int rows, int cols)`
   * `Matrix<T>::eye(int n)` / `Matrix<T>::eye(int rows, int cols)` / `Matrix<T>::identity(int n)`
   * `Matrix<T>::rand(int rows, int cols)` / `Matrix<T>::randn(int rows, int cols)`
+  * `Matrix<T>::randInt(int rows, int cols, int low = 0, int high = RAND_MAX)`
+  * `Matrix<T>::randperm(int rows, int cols = 1)`
   * `Matrix<T>::diag(const Matrix<T>& v)` / `Matrix<T>::diag(const std::vector<T>& v)`
   * `Matrix<T>::linspace(T start, T end, int n)`
   * `Matrix<T>::arange(T start, T stop, T step = 1)`
@@ -173,7 +179,7 @@ All C++ classes and functions reside in the `smat` namespace. `Matrix<T>` suppor
 * `M[r][c]` / `M.v[r][c]`: Fast direct row-pointer access.
 * `M.data()`: Pointer to contiguous underlying row-major array (`T*`).
 * `M.rows()`, `M.columns()` / `M.cols()`, `M.size()`, `M.empty()`.
-* `M.isSquare()`, `M.isSymmetric(double tol = 1e-9)`, `M.equals(other, double tol = 1e-9)`.
+* `M.isSquare()`, `M.isVector()`, `M.isSymmetric(double tol = 1e-9)`, `M.equals(other, double tol = 1e-9)`.
 * `M.fill(T value)`, `M.copy()`, `M.print()`, `M.saveTxt(filename)`.
 * `std::cout << M`: Formatted stream output.
 
@@ -204,9 +210,9 @@ All C++ classes and functions reside in the `smat` namespace. `Matrix<T>` suppor
 * `A.kron(B)`: Kronecker tensor product $A \otimes B$.
 
 ### Norms, Reductions & Statistics
-* `sum()`, `mean()`, `var(bool sample = false)`, `std(bool sample = false)`.
+* `sum()`, `mean()`, `var(bool sample = true)`, `std(bool sample = true)`.
 * `minEl()`, `minEl(int &r, int &c)`, `maxEl()`, `maxEl(int &r, int &c)`.
-* `sumAxis(int axis)`, `meanAxis(int axis)` (`axis = 0` for column-wise $1 \times n$, `axis = 1` for row-wise $m \times 1$).
+* `sumAxis(int axis)`, `meanAxis(int axis)`, `minAxis(int axis)`, `maxAxis(int axis)` (`axis = 0` for column-wise $1 \times n$, `axis = 1` for row-wise $m \times 1$).
 * `trace()`: Sum of diagonal elements $\text{tr}(A)$.
 * `fnorm()`: Frobenius norm $\|A\|_F$.
 * `pnorm(double p)`: Entrywise $L_p$ norm.
@@ -242,9 +248,9 @@ All C++ classes and functions reside in the `smat` namespace. `Matrix<T>` suppor
 
 ---
 
-## Pure C API Reference (`smat_t`)
+## Pure C API Reference (`SimpleMatrixC.h` — `smat_t`)
 
-When included in a `.c` file (or via `extern "C"` in C++), `SimpleMatrix.h` exposes the `smat_t` (alias `SMatrix`) struct and `smat_*` functions.
+Include `SimpleMatrixC.h` in any `.c` file to use the `smat_t` (alias `SMatrix`) struct and `smat_*` functions.
 
 ### Types & Error Handling
 ```c
@@ -279,7 +285,7 @@ Error status codes (`smat_err_t`): `SMAT_OK` (`0`), `SMAT_ERR_NULL`, `SMAT_ERR_A
 * Element-wise: `smat_abs`, `smat_neg`, `smat_exp`, `smat_log`, `smat_sqrt`, `smat_pow`, `smat_apply`
 * Matrix-Matrix: `smat_add`, `smat_sub_mat`, `smat_dot_mul`, `smat_dot_div` (and `*_self` in-place variants)
 * Products: `smat_mul(A, B)`, `smat_dot(a, b)`, `smat_cross(a, b)`, `smat_outer(a, b)`, `smat_kron(A, B)`
-* Statistics & Norms: `smat_sum`, `smat_mean`, `smat_var`, `smat_std`, `smat_std_sample`, `smat_trace`, `smat_fnorm`, `smat_pnorm`, `smat_norm_1`, `smat_norm_inf`, `smat_norm_2`, `smat_cond`, `smat_max`, `smat_min`, `smat_sum_axis`, `smat_mean_axis`, `smat_cov`, `smat_corrcoef`
+* Statistics & Norms: `smat_sum`, `smat_mean`, `smat_var`, `smat_std`, `smat_std_sample`, `smat_trace`, `smat_fnorm`, `smat_pnorm`, `smat_norm_1`, `smat_norm_inf`, `smat_norm_2`, `smat_cond`, `smat_max`, `smat_min`, `smat_sum_axis`, `smat_mean_axis`, `smat_min_axis`, `smat_max_axis`, `smat_cov`, `smat_corrcoef`
 
 ### Linear Algebra, PCA & MDS in C
 * `smat_lu(A, &L, &U, &P)`

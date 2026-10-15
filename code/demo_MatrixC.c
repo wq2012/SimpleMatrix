@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "SimpleMatrix.h"
+#include "SimpleMatrixC.h"
 
 int main(void) {
     printf("============================================================\n");

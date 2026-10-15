@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include "../SimpleMatrix.h"
+#include "../SimpleMatrixC.h"
 
 int main(void) {
     printf("============================================================\n");
-    printf("Example 4: Pure C Scientific Computing with SimpleMatrix.h\n");
+    printf("Example 4: Pure C Scientific Computing with SimpleMatrixC.h\n");
     printf("============================================================\n\n");
 
     /* 1. Linear Least-Squares Regression in Pure C: y = m * x + b */

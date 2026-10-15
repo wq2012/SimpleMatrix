@@ -153,6 +153,21 @@ void test_statistics()
   assertFloatEqual(A.mean(), 1.08333);
   assertFloatEqual(A.fnorm(), 6.245);
 
+  smat::Matd Min0 = A.minAxis(0);
+  smat::Matd Max1 = A.maxAxis(1);
+  assertIntEq(Min0.rows(), 1);
+  assertIntEq(Min0.cols(), 4);
+  assertFloatEqual(Min0(0, 1), -2.0);
+  assertIntEq(Max1.rows(), 3);
+  assertIntEq(Max1.cols(), 1);
+  assertFloatEqual(Max1(2, 0), 5.0);
+
+  smat::Mati RI = smat::Mati::randInt(3, 3, 10, 20);
+  assertTrue(RI.minEl() >= 10 && RI.maxEl() <= 20, "randInt within [10, 20]");
+  smat::Mati RP = smat::Mati::randperm(5, 2);
+  assertIntEq(RP.col(0).sum(), 15);
+  assertIntEq(RP.col(1).sum(), 15);
+
   printTestPass("Statistics");
 }
 

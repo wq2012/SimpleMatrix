@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "SimpleMatrix.h"
+#include "SimpleMatrixC.h"
 
 #define TEST_EPS 1e-6
 
@@ -205,9 +205,13 @@ static void test_c_stats_and_norms(void) {
 
     smat_t *S0 = smat_sum_axis(A, 0);
     smat_t *S1 = smat_sum_axis(A, 1);
+    smat_t *Min0 = smat_min_axis(A, 0);
+    smat_t *Max1 = smat_max_axis(A, 1);
     assert_dbl_eq(S0->v[0][0], 5.0, TEST_EPS, "col 0 sum (1+4)");
     assert_dbl_eq(S1->v[0][0], 6.0, TEST_EPS, "row 0 sum (1+2+3)");
     assert_dbl_eq(S1->v[1][0], 15.0, TEST_EPS, "row 1 sum (4+5+6)");
+    assert_dbl_eq(Min0->v[0][2], 3.0, TEST_EPS, "col 2 min (min(3,6))");
+    assert_dbl_eq(Max1->v[1][0], 6.0, TEST_EPS, "row 1 max (max(4,5,6))");
 
     assert_dbl_eq(smat_norm_1(A), 9.0, TEST_EPS, "1-norm max col sum (3+6)");
     assert_dbl_eq(smat_norm_inf(A), 15.0, TEST_EPS, "inf-norm max row sum (4+5+6)");
@@ -221,7 +225,7 @@ static void test_c_stats_and_norms(void) {
     assert_dbl_eq(Cov->v[1][1], 4.0, TEST_EPS, "var(col 1) = 4");
     assert_dbl_eq(Corr->v[0][1], 1.0, TEST_EPS, "perfect positive correlation");
 
-    smat_free(A); smat_free(S0); smat_free(S1);
+    smat_free(A); smat_free(S0); smat_free(S1); smat_free(Min0); smat_free(Max1);
     smat_free(X); smat_free(Cov); smat_free(Corr);
 }
 
@@ -334,22 +338,31 @@ static void test_c_decompositions_and_solvers(void) {
     assert_true(smat_equals(ExpProd, I3, 1e-5), "expm(A) * expm(-A) == I");
     smat_free(NegA); smat_free(ExpA); smat_free(ExpNegA); smat_free(ExpProd);
 
-    /* 8. PCA & Classical MDS */
+    /* 8. PCA & MDS (Classical, SMACOF, UCF) */
     smat_t *Proj = NULL, *Comp = NULL, *ExpVar = NULL;
     assert_int_eq(smat_pca(SPD, 2, &Proj, &Comp, &ExpVar), SMAT_OK, "smat_pca");
     assert_int_eq(Proj->cols, 2, "pca projected cols");
     assert_int_eq(Comp->cols, 2, "pca components cols");
     smat_free(Proj); smat_free(Comp); smat_free(ExpVar);
 
-    /* Classical MDS on unit square */
+    /* Classical, SMACOF, and UCF MDS on unit square */
     double sq_pts[8] = {0, 0, 0, 1, 1, 0, 1, 1};
     smat_t *Pts = smat_from_array(4, 2, sq_pts);
     smat_t *Dist = smat_pdist(Pts);
     smat_t *RecPts = smat_mds_classical(Dist, 2);
     smat_t *RecDist = smat_pdist(RecPts);
-    assert_true(smat_equals(Dist, RecDist, TEST_EPS), "Classical MDS preserves Euclidean distances exactly");
+    assert_true(smat_equals(Dist, RecDist, TEST_EPS), "Classical MDS preserves Euclidean distances");
+
+    smat_t *SmacofPts = smat_mds_smacof(Dist, RecPts, 2, 20);
+    smat_t *SmacofDist = smat_pdist(SmacofPts);
+    assert_true(smat_equals(Dist, SmacofDist, 1e-4), "SMACOF MDS preserves Euclidean distances");
+
+    smat_t *UcfPts = smat_mds_ucf(Dist, RecPts, 2, 10);
+    smat_t *UcfDist = smat_pdist(UcfPts);
+    assert_true(smat_equals(Dist, UcfDist, 1e-2), "UCF MDS preserves Euclidean distances");
 
     smat_free(Pts); smat_free(Dist); smat_free(RecPts); smat_free(RecDist);
+    smat_free(SmacofPts); smat_free(SmacofDist); smat_free(UcfPts); smat_free(UcfDist);
     smat_free(A); smat_free(Sing); smat_free(SPD); smat_free(Wide); smat_free(I3);
 }
 

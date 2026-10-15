@@ -28,13 +28,13 @@ examples: example_linear_systems.exe example_decompositions.exe example_data_sci
 demo_Matrix.exe: demo_Matrix.cpp SimpleMatrix.h
 	$(CXX) $(CXXFLAGS) demo_Matrix.cpp -o demo_Matrix.exe
 
-demo_MatrixC.exe: demo_MatrixC.c SimpleMatrix.h
+demo_MatrixC.exe: demo_MatrixC.c SimpleMatrixC.h
 	$(CC) $(CFLAGS) demo_MatrixC.c $(LDFLAGS) -o demo_MatrixC.exe
 
 SimpleMatrixTest.exe: SimpleMatrixTest.cpp SimpleMatrix.h
 	$(CXX) $(CXXFLAGS) SimpleMatrixTest.cpp -o SimpleMatrixTest.exe
 
-SimpleMatrixTestC.exe: SimpleMatrixTestC.c SimpleMatrix.h
+SimpleMatrixTestC.exe: SimpleMatrixTestC.c SimpleMatrixC.h
 	$(CC) $(CFLAGS) SimpleMatrixTestC.c $(LDFLAGS) -o SimpleMatrixTestC.exe
 
 example_linear_systems.exe: examples/example_linear_systems.cpp SimpleMatrix.h
@@ -46,7 +46,7 @@ example_decompositions.exe: examples/example_decompositions.cpp SimpleMatrix.h
 example_data_science.exe: examples/example_data_science.cpp SimpleMatrix.h
 	$(CXX) $(CXXFLAGS) examples/example_data_science.cpp -o example_data_science.exe
 
-example_c_usage.exe: examples/example_c_usage.c SimpleMatrix.h
+example_c_usage.exe: examples/example_c_usage.c SimpleMatrixC.h
 	$(CC) $(CFLAGS) examples/example_c_usage.c $(LDFLAGS) -o example_c_usage.exe
 
 clean:
